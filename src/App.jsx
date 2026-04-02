@@ -620,6 +620,178 @@ const Histograma = ({dist, maxMeses=60}) => {
 };
 
 // ═══════════════════════════════════════════════════════════
+// CHAT IA CLOSER — Coach de vendas em tempo real
+// ═══════════════════════════════════════════════════════════
+function ChatCloser() {
+  const [open, setOpen] = useState(false);
+  const [msgs, setMsgs] = useState([
+    { role:"assistant", content:"E aí, como tá a call? Me fala o que o cliente disse que eu te digo como responder." }
+  ]);
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
+  const chatEndRef = useRef(null);
+  const inputRef = useRef(null);
+
+  const scrollToBottom = useCallback(() => {
+    setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior:"smooth" }), 50);
+  }, []);
+
+  const send = useCallback(async () => {
+    if (!input.trim() || loading) return;
+    const userMsg = { role:"user", content: input.trim() };
+    const newMsgs = [...msgs, userMsg];
+    setMsgs(newMsgs);
+    setInput("");
+    setLoading(true);
+    scrollToBottom();
+
+    try {
+      const res = await fetch("/api/chat", {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({ messages: newMsgs.slice(-10) }), // últimas 10 msgs pra contexto
+      });
+      const data = await res.json();
+      if (data.content) {
+        setMsgs(prev => [...prev, { role:"assistant", content: data.content }]);
+      } else {
+        setMsgs(prev => [...prev, { role:"assistant", content:"Erro: " + (data.error || "tenta de novo") }]);
+      }
+    } catch (err) {
+      setMsgs(prev => [...prev, { role:"assistant", content:"Erro de conexão. Tenta de novo." }]);
+    }
+    setLoading(false);
+    scrollToBottom();
+  }, [input, msgs, loading, scrollToBottom]);
+
+  if (!open) {
+    return (
+      <div onClick={()=>{setOpen(true);setTimeout(()=>inputRef.current?.focus(),100);}} style={{
+        position:"fixed", bottom:20, right:20, width:56, height:56, borderRadius:16,
+        background:"linear-gradient(135deg,#D4781E,#A85A15)", cursor:"pointer",
+        display:"flex", alignItems:"center", justifyContent:"center",
+        boxShadow:"0 4px 20px rgba(212,120,30,0.4)", zIndex:1000, transition:"transform 0.2s",
+      }}
+        onMouseEnter={e=>e.currentTarget.style.transform="scale(1.08)"}
+        onMouseLeave={e=>e.currentTarget.style.transform="scale(1)"}
+      >
+        <svg width="24" height="24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+        </svg>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{
+      position:"fixed", bottom:20, right:20, width:380, maxWidth:"calc(100vw - 32px)",
+      height:520, maxHeight:"calc(100vh - 40px)",
+      background:"#0E0E0E", border:"1px solid rgba(212,120,30,0.2)", borderRadius:16,
+      display:"flex", flexDirection:"column", zIndex:1000,
+      boxShadow:"0 8px 40px rgba(0,0,0,0.6)",
+      fontFamily:"'DM Sans',system-ui,sans-serif",
+    }}>
+      {/* Header */}
+      <div style={{
+        padding:"12px 16px", borderBottom:"1px solid rgba(255,255,255,0.06)",
+        display:"flex", alignItems:"center", justifyContent:"space-between",
+        background:"linear-gradient(135deg,#1A1008,#0E0E0E)", borderRadius:"16px 16px 0 0",
+      }}>
+        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+          <div style={{ width:8, height:8, borderRadius:"50%", background:"#D4781E", boxShadow:"0 0 8px rgba(212,120,30,0.5)" }}/>
+          <div>
+            <div style={{ fontSize:13, fontWeight:800, color:"#fff" }}>Coach Anthony</div>
+            <div style={{ fontSize:8, color:"#6B7280" }}>IA treinada com suas calls reais</div>
+          </div>
+        </div>
+        <button onClick={()=>setOpen(false)} style={{ background:"none", border:"none", color:"#6B7280", cursor:"pointer", fontSize:18, padding:4 }}>x</button>
+      </div>
+
+      {/* Messages */}
+      <div style={{ flex:1, overflowY:"auto", padding:"12px 14px", display:"flex", flexDirection:"column", gap:10 }}>
+        {msgs.map((m,i) => (
+          <div key={i} style={{
+            alignSelf: m.role === "user" ? "flex-end" : "flex-start",
+            maxWidth:"85%",
+          }}>
+            <div style={{
+              background: m.role === "user" ? "rgba(212,120,30,0.12)" : "rgba(255,255,255,0.04)",
+              border: m.role === "user" ? "1px solid rgba(212,120,30,0.2)" : "1px solid rgba(255,255,255,0.06)",
+              borderRadius: m.role === "user" ? "12px 12px 2px 12px" : "12px 12px 12px 2px",
+              padding:"10px 12px",
+            }}>
+              {m.role === "assistant" && <div style={{ fontSize:8, fontWeight:700, color:"#D4781E", marginBottom:4 }}>ANTHONY</div>}
+              <div style={{ fontSize:12, color: m.role === "user" ? "#E5E7EB" : "#C9CDD4", lineHeight:1.6, whiteSpace:"pre-wrap" }}>{m.content}</div>
+            </div>
+            {m.role === "assistant" && i > 0 && !m.feedback && (
+              <div style={{ display:"flex", gap:4, marginTop:3 }}>
+                <button onClick={()=>{
+                  const newMsgs = [...msgs]; newMsgs[i] = {...m, feedback:"worked"};
+                  setMsgs(newMsgs);
+                  fetch("/api/log",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({type:"chat",content:m.content,feedback:"worked"})}).catch(()=>{});
+                }} style={{ fontSize:8, padding:"2px 6px", borderRadius:4, border:"1px solid rgba(212,120,30,0.15)", background:"transparent", color:"#6B7280", cursor:"pointer", fontFamily:"inherit" }}>Funcionou</button>
+                <button onClick={()=>{
+                  const newMsgs = [...msgs]; newMsgs[i] = {...m, feedback:"didnt_work"};
+                  setMsgs(newMsgs);
+                  fetch("/api/log",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({type:"chat",content:m.content,feedback:"didnt_work"})}).catch(()=>{});
+                }} style={{ fontSize:8, padding:"2px 6px", borderRadius:4, border:"1px solid rgba(239,68,68,0.15)", background:"transparent", color:"#6B7280", cursor:"pointer", fontFamily:"inherit" }}>Não funcionou</button>
+              </div>
+            )}
+            {m.role === "assistant" && m.feedback && (
+              <div style={{ fontSize:8, color: m.feedback === "worked" ? "#D4781E" : "#EF4444", marginTop:3 }}>
+                {m.feedback === "worked" ? "Registrado" : "Registrado — vou melhorar"}
+              </div>
+            )}
+          </div>
+        ))}
+        {loading && (
+          <div style={{ alignSelf:"flex-start", maxWidth:"85%", background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.06)", borderRadius:"12px 12px 12px 2px", padding:"10px 12px" }}>
+            <div style={{ fontSize:8, fontWeight:700, color:"#D4781E", marginBottom:4 }}>ANTHONY</div>
+            <div style={{ fontSize:12, color:"#6B7280" }}>Pensando...</div>
+          </div>
+        )}
+        <div ref={chatEndRef}/>
+      </div>
+
+      {/* Input */}
+      <div style={{ padding:"10px 12px", borderTop:"1px solid rgba(255,255,255,0.06)", display:"flex", gap:8 }}>
+        <input
+          ref={inputRef}
+          value={input}
+          onChange={e=>setInput(e.target.value)}
+          onKeyDown={e=>e.key==="Enter"&&!e.shiftKey&&send()}
+          placeholder="O que o cliente falou?"
+          style={{
+            flex:1, padding:"10px 12px", borderRadius:10,
+            border:"1px solid rgba(255,255,255,0.08)", background:"rgba(255,255,255,0.03)",
+            color:"#fff", fontSize:12, fontFamily:"inherit", outline:"none",
+          }}
+        />
+        <button onClick={send} disabled={loading || !input.trim()} style={{
+          padding:"10px 16px", borderRadius:10, border:"none",
+          background: input.trim() ? "linear-gradient(135deg,#D4781E,#A85A15)" : "rgba(255,255,255,0.04)",
+          color: input.trim() ? "#fff" : "#4B5563", fontSize:12, fontWeight:700,
+          cursor: input.trim() ? "pointer" : "default", fontFamily:"inherit",
+        }}>
+          Enviar
+        </button>
+      </div>
+
+      {/* Quick actions */}
+      <div style={{ padding:"6px 12px 10px", display:"flex", gap:4, flexWrap:"wrap" }}>
+        {["Cliente disse 'vou pensar'","Como explicar consórcio?","Cliente não tem entrada","Cliente tem pressa","Cola conversa WhatsApp aqui","Analisa as dores mais comuns"].map((q,i)=>(
+          <button key={i} onClick={()=>{setInput(q);setTimeout(()=>inputRef.current?.focus(),50);}} style={{
+            padding:"4px 8px", borderRadius:6, border:"1px solid rgba(255,255,255,0.04)",
+            background:"transparent", color:"#4B5563", fontSize:8, cursor:"pointer",
+            fontFamily:"inherit", fontWeight:600,
+          }}>{q}</button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════
 export default function App() {
   const [modo, setModo] = useState(null);
   const [preset, setPreset] = useState("imovel_cnp");
@@ -1551,6 +1723,9 @@ export default function App() {
           </div>
         </div>
       </div>
+
+      {/* Chat IA Closer — flutuante */}
+      <ChatCloser />
     </div>
   );
 }
