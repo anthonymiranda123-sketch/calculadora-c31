@@ -579,18 +579,21 @@ const pc = v => `${(v*100).toFixed(2)}%`;
 const pc1 = v => `${(v*100).toFixed(1)}%`;
 
 // ═══════════════════════════════════════════════════════════
-const Field = ({label, sub, value, onChange, min, max, step, suffix, cor}) => (
-  <div style={{ marginBottom:14 }}>
-    <label style={{ fontSize:10, fontWeight:700, color:"#6B7280", display:"block", marginBottom:4 }}>
-      {label} {sub && <span style={{ fontWeight:400, color:"#4B5563" }}>({sub})</span>}
-    </label>
-    <div style={{ display:"flex" }}>
-      <input type="number" value={value} onChange={e=>onChange(Number(e.target.value))} min={min} max={max} step={step}
-        style={{ flex:1, padding:"10px 12px", borderRadius:suffix?"8px 0 0 8px":"8px", border:`1px solid ${cor||"rgba(255,255,255,0.08)"}`, background:`${(cor||"#fff")}08`, color:"#fff", fontSize:16, fontWeight:700, fontFamily:"'JetBrains Mono',monospace", outline:"none", boxSizing:"border-box" }}/>
-      {suffix && <div style={{ padding:"10px 12px", background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.08)", borderLeft:"none", borderRadius:"0 8px 8px 0", fontSize:12, color:"#6B7280", fontWeight:600 }}>{suffix}</div>}
+const Field = ({label, sub, value, onChange, min, max, step, suffix, cor, placeholder}) => {
+  const isText = typeof value === "string" && !suffix;
+  return (
+    <div style={{ marginBottom:14 }}>
+      <label style={{ fontSize:10, fontWeight:700, color:"#6B7280", display:"block", marginBottom:4 }}>
+        {label} {sub && <span style={{ fontWeight:400, color:"#4B5563" }}>({sub})</span>}
+      </label>
+      <div style={{ display:"flex" }}>
+        <input type={isText ? "text" : "number"} value={value} onChange={e=>onChange(isText ? e.target.value : Number(e.target.value))} min={min} max={max} step={step} placeholder={placeholder}
+          style={{ flex:1, padding:"10px 12px", borderRadius:suffix?"8px 0 0 8px":"8px", border:`1px solid ${cor||"rgba(255,255,255,0.08)"}`, background:`${(cor||"#fff")}08`, color:"#fff", fontSize: isText ? 14 : 16, fontWeight:700, fontFamily: isText ? "inherit" : "'JetBrains Mono',monospace", outline:"none", boxSizing:"border-box" }}/>
+        {suffix && <div style={{ padding:"10px 12px", background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.08)", borderLeft:"none", borderRadius:"0 8px 8px 0", fontSize:12, color:"#6B7280", fontWeight:600 }}>{suffix}</div>}
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 const MiniBar = ({pct, color}) => (
   <div style={{ height:6, background:"rgba(255,255,255,0.04)", borderRadius:3, overflow:"hidden", marginTop:4 }}>
@@ -627,6 +630,13 @@ export default function App() {
   const [bolso, setBolso] = useState(20);
   const [creditoSmart, setCreditoSmart] = useState(400000);
   const [calculado, setCalculado] = useState(false);
+  // Closer mode
+  const [closerStep, setCloserStep] = useState(0);
+  const [closerData, setCloserData] = useState({
+    nomeCliente: "", porqueComprar: "", oQueComprar: "imovel", quantoCusta: 300000,
+    praQuando: "6", quantoEntrada: 0, quantoPorMes: 2000, renda: 8000,
+    pagaAluguel: 0, decideSozinho: "sim", tipoAdm: "imovel_cnp",
+  });
   const [gruposImportados, setGruposImportados] = useState([]);
   const [importLog, setImportLog] = useState([]);
   const [showImport, setShowImport] = useState(false);
@@ -759,6 +769,25 @@ export default function App() {
     }
     return null;
   }, [modo, calculado, credito, taxa, prazo, embutido, bolso]);
+
+  // Closer mode strategies
+  const closerEstrategias = useMemo(() => {
+    if (modo !== "closer" || closerStep < 4) return [];
+    const pKey = closerData.tipoAdm;
+    const pr = PRESETS[pKey];
+    if (!pr) return [];
+    const c = closerData.quantoCusta;
+    const entrada = closerData.quantoEntrada;
+    const bolsoPct = c > 0 ? entrada / (c / (1 - pr.embutidoMax)) : 0;
+    return [
+      { nome:"Só Embutido", sub:"Zero do bolso", tag:"SEM ENTRADA",
+        ...calcular(c/(1-pr.embutidoMax), pr.taxa, pr.prazo, pr.embutidoMax, 0, pr) },
+      ...(entrada > 0 ? [{ nome:"Embutido + Entrada", sub:`${f(entrada)} do bolso`, tag:"COM ENTRADA",
+        ...calcular(c/(1-pr.embutidoMax), pr.taxa, pr.prazo, pr.embutidoMax, bolsoPct, pr) }] : []),
+      { nome:"Parcela ½ + Fidelidade", sub:"Sem lance, parcela reduzida", tag:"ZERO CUSTO",
+        ...calcular(c, pr.taxa, pr.prazo, 0, 0, pr) },
+    ];
+  }, [modo, closerStep, closerData]);
 
   const estrategias = useMemo(() => {
     if (modo === "smart" && calculado && p) {
@@ -1069,6 +1098,23 @@ export default function App() {
           <div>
             <h2 style={{ fontSize:20, fontWeight:800, color:"#fff", marginBottom:4, textAlign:"center" }}>Como quer calcular?</h2>
             <p style={{ fontSize:12, color:"#6B7280", textAlign:"center", marginBottom:20 }}>Simulação Código 31 com Monte Carlo</p>
+            {/* MODO CLOSER — destaque */}
+            <div onClick={()=>{setModo("closer");setCloserStep(1);}} style={{ ...card(false,"#D4781E"), cursor:"pointer", padding:20, marginBottom:16, position:"relative", overflow:"hidden" }}>
+              <div style={{ position:"absolute", top:0, right:0, background:"linear-gradient(135deg,#D4781E,#A85A15)", padding:"4px 14px", borderRadius:"0 0 0 10px", fontSize:8, fontWeight:800, color:"#fff", letterSpacing:1 }}>MÉTODO ANTHONY</div>
+              <div style={{ display:"flex", alignItems:"center", gap:16 }}>
+                <div style={{ fontSize:40 }}>🎯</div>
+                <div>
+                  <div style={{ fontSize:18, fontWeight:900, color:"#fff", marginBottom:2 }}>Modo Closer</div>
+                  <div style={{ fontSize:11, color:"#9CA3AF", lineHeight:1.5 }}>Guia passo a passo do framework de 5 etapas. Levanta perfil, monta oferta irrecusável e fecha.</div>
+                  <div style={{ display:"flex", gap:8, marginTop:8 }}>
+                    {["Abordagem","Perfil","Oferta","Valorização","Fechamento"].map((s,i)=>(
+                      <span key={i} style={{ fontSize:7, fontWeight:700, color:"#D4781E", background:"rgba(212,120,30,0.1)", padding:"2px 6px", borderRadius:3, letterSpacing:0.5 }}>{i+1}. {s}</span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <div style={{ display:"flex", gap:12 }}>
               {[["manual","🔧","Manual","Preenche tudo: crédito, taxa, prazo, lances","#D4781E"],["smart","⚡","Inteligente","Só crédito + tipo. Sistema calcula 3 estratégias.","#D4781E"]].map(([k,ico,tit,desc,cor])=>(
                 <div key={k} onClick={()=>setModo(k)} style={{ flex:1, ...card(false,cor), cursor:"pointer", textAlign:"center", padding:24 }}>
@@ -1164,6 +1210,332 @@ export default function App() {
             <button onClick={()=>window.print()} style={{ width:"100%", padding:"12px", borderRadius:8, border:"none", background:"linear-gradient(135deg,#D4781E,#A85A15)", color:"#fff", fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"inherit", marginTop:8 }}>Imprimir / PDF</button>
           </div>
         )}
+        {/* ═══════ MODO CLOSER ═══════ */}
+        {modo==="closer" && (()=>{
+          const steps = [
+            { n:1, t:"Abordagem", ico:"👋" },
+            { n:2, t:"Perfil", ico:"🎯" },
+            { n:3, t:"Oferta", ico:"💎" },
+            { n:4, t:"Valorização", ico:"🌡️" },
+            { n:5, t:"Fechamento", ico:"🤝" },
+          ];
+          const cd = closerData;
+          const setCD = (k,v) => setCloserData(prev => ({...prev, [k]:v}));
+          const comprometimento = cd.renda > 0 ? ((cd.quantoPorMes + cd.pagaAluguel) / cd.renda * 100).toFixed(0) : 0;
+          const comprOk = comprometimento <= 33;
+
+          return (
+            <div>
+              {/* Progress bar */}
+              <div style={{ display:"flex", gap:4, marginBottom:20 }}>
+                {steps.map(s => (
+                  <div key={s.n} onClick={()=> s.n <= closerStep && setCloserStep(s.n)} style={{ flex:1, cursor: s.n <= closerStep ? "pointer" : "default" }}>
+                    <div style={{ height:3, borderRadius:2, background: s.n <= closerStep ? "#D4781E" : "rgba(255,255,255,0.06)", transition:"background 0.3s", marginBottom:4 }}/>
+                    <div style={{ fontSize:8, fontWeight:700, color: s.n === closerStep ? "#D4781E" : s.n < closerStep ? "#6B7280" : "#2A2A2A", textAlign:"center", letterSpacing:0.3 }}>{s.ico} {s.t}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* STEP 1 — ABORDAGEM */}
+              {closerStep === 1 && (
+                <div>
+                  <div style={{ ...card(false,"#D4781E"), padding:20 }}>
+                    <div style={{ fontSize:14, fontWeight:800, color:"#fff", marginBottom:12 }}>1. Abordagem</div>
+                    <div style={{ background:"rgba(212,120,30,0.06)", border:"1px solid rgba(212,120,30,0.12)", borderRadius:8, padding:12, marginBottom:14 }}>
+                      <div style={{ fontSize:9, fontWeight:700, color:"#D4781E", marginBottom:6, letterSpacing:0.5 }}>REGRAS DE OURO</div>
+                      <div style={{ fontSize:11, color:"#C9CDD4", lineHeight:1.7 }}>
+                        Nunca entre "seco". <strong style={{ color:"#fff" }}>Videocall com câmera</strong> &gt; Ligação &gt; WhatsApp.<br/>
+                        Seja o médico: <strong style={{ color:"#fff" }}>escute primeiro</strong>, nunca abra com o produto.<br/>
+                        "Brasileiros compram com confirmação de amizade" — rapport é obrigatório.
+                      </div>
+                    </div>
+
+                    <div style={{ background:"rgba(255,255,255,0.02)", borderRadius:8, padding:12, marginBottom:14 }}>
+                      <div style={{ fontSize:9, fontWeight:700, color:"#6B7280", marginBottom:8 }}>CHECKLIST</div>
+                      {["Câmera ligada (ou justificativa)", "Quebra-gelo feito (rapport)", "Cliente sabe que você vende consórcio", "Combinado: 'Se não servir, eu mesmo vou te falar'"].map((item,i) => (
+                        <div key={i} style={{ fontSize:10, color:"#9CA3AF", padding:"4px 0", borderBottom:"1px solid rgba(255,255,255,0.02)", display:"flex", gap:6, alignItems:"center" }}>
+                          <span style={{ color:"#D4781E", fontSize:12 }}>○</span> {item}
+                        </div>
+                      ))}
+                    </div>
+
+                    <Field label="Nome do cliente" value={cd.nomeCliente} onChange={v=>setCD("nomeCliente",v)} cor="#D4781E"/>
+
+                    <div style={{ background:"rgba(139,92,246,0.06)", border:"1px solid rgba(139,92,246,0.12)", borderRadius:8, padding:10, marginBottom:14 }}>
+                      <div style={{ fontSize:9, color:"#8B5CF6", fontWeight:700 }}>FRASE DE ABERTURA</div>
+                      <div style={{ fontSize:11, color:"#C9CDD4", marginTop:4, fontStyle:"italic", lineHeight:1.6 }}>
+                        "Vou te explicar como funciona. Duas coisas: se não entender, me interrompe. Se achar que não é pra você, me fala. Eu não tô aqui pra te vender nada — tô aqui pra te ajudar a decidir. Pode ser que no final eu mesmo diga que consórcio não é pra você agora."
+                      </div>
+                    </div>
+
+                    <button onClick={()=>setCloserStep(2)} style={{ width:"100%", padding:"14px", borderRadius:10, border:"none", background:"linear-gradient(135deg,#D4781E,#A85A15)", color:"#fff", fontSize:14, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+                      Rapport feito → Levantar Perfil
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* STEP 2 — LEVANTAMENTO DE PERFIL */}
+              {closerStep === 2 && (
+                <div>
+                  <div style={{ ...card(false,"#D4781E"), padding:20 }}>
+                    <div style={{ fontSize:14, fontWeight:800, color:"#fff", marginBottom:4 }}>2. Levantamento de Perfil</div>
+                    <div style={{ fontSize:10, color:"#D4781E", marginBottom:14, fontWeight:600 }}>70% da venda mora aqui. Sem atalhos.</div>
+
+                    <div style={{ background:"rgba(212,120,30,0.06)", borderRadius:8, padding:12, marginBottom:14 }}>
+                      <div style={{ fontSize:9, fontWeight:700, color:"#D4781E", marginBottom:6 }}>AS 7 PERGUNTAS</div>
+                      <div style={{ fontSize:10, color:"#C9CDD4", lineHeight:2 }}>
+                        {["① Por que quer comprar consórcio?","② O que quer comprar?","③ Quanto custa o que quer?","④ Pra quando quer?","⑤ Quanto tem de entrada?","⑥ Quanto pode pagar por mês?","⑦ Qual a renda? Paga aluguel?"].map((q,i) => (
+                          <div key={i}>{q}</div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div style={{ marginBottom:6, fontSize:9, fontWeight:700, color:"#6B7280", letterSpacing:0.5 }}>RESPOSTAS DO CLIENTE</div>
+
+                    <div style={{ marginBottom:10 }}>
+                      <label style={{ fontSize:10, fontWeight:700, color:"#6B7280", display:"block", marginBottom:4 }}>① Por que quer comprar?</label>
+                      <textarea value={cd.porqueComprar} onChange={e=>setCD("porqueComprar",e.target.value)} placeholder="Ex: sair do aluguel, investir, comprar primeiro imóvel..."
+                        style={{ width:"100%", padding:10, borderRadius:8, border:"1px solid rgba(255,255,255,0.08)", background:"rgba(255,255,255,0.02)", color:"#fff", fontSize:12, fontFamily:"inherit", minHeight:50, resize:"vertical", outline:"none", boxSizing:"border-box" }}/>
+                    </div>
+
+                    <div style={{ marginBottom:10 }}>
+                      <label style={{ fontSize:10, fontWeight:700, color:"#6B7280", display:"block", marginBottom:4 }}>② O que quer comprar?</label>
+                      <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+                        {[["imovel","Imóvel"],["veiculo","Veículo"],["servico","Serviço/Reforma"],["pesado","Pesado/Agro"]].map(([k,v])=>(
+                          <button key={k} onClick={()=>setCD("oQueComprar",k)} style={{ padding:"6px 12px", borderRadius:6, border: cd.oQueComprar===k ? "1.5px solid #D4781E" : "1px solid rgba(255,255,255,0.06)", background: cd.oQueComprar===k ? "rgba(212,120,30,0.08)" : "transparent", color: cd.oQueComprar===k ? "#D4781E" : "#6B7280", fontSize:10, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>{v}</button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <Field label="③ Quanto custa o que quer?" value={cd.quantoCusta} onChange={v=>setCD("quantoCusta",v)} min={20000} max={5000000} step={10000} suffix="R$" cor="#D4781E"/>
+
+                    <div style={{ marginBottom:10 }}>
+                      <label style={{ fontSize:10, fontWeight:700, color:"#6B7280", display:"block", marginBottom:4 }}>④ Pra quando?</label>
+                      <div style={{ display:"flex", gap:6 }}>
+                        {[["3","3 meses"],["6","6 meses"],["12","1 ano"],["24","2+ anos"],["0","Sem pressa"]].map(([k,v])=>(
+                          <button key={k} onClick={()=>setCD("praQuando",k)} style={{ flex:1, padding:"6px 4px", borderRadius:6, border: cd.praQuando===k ? "1.5px solid #D4781E" : "1px solid rgba(255,255,255,0.06)", background: cd.praQuando===k ? "rgba(212,120,30,0.08)" : "transparent", color: cd.praQuando===k ? "#D4781E" : "#6B7280", fontSize:9, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>{v}</button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <Field label="⑤ Quanto tem de entrada?" value={cd.quantoEntrada} onChange={v=>setCD("quantoEntrada",v)} min={0} max={2000000} step={5000} suffix="R$" cor="#F59E0B"/>
+                    <Field label="⑥ Quanto pode pagar/mês?" value={cd.quantoPorMes} onChange={v=>setCD("quantoPorMes",v)} min={300} max={50000} step={100} suffix="R$" cor="#D4781E"/>
+
+                    <div style={{ display:"flex", gap:10 }}>
+                      <div style={{ flex:1 }}><Field label="⑦ Renda mensal" value={cd.renda} onChange={v=>setCD("renda",v)} min={1000} max={200000} step={500} suffix="R$"/></div>
+                      <div style={{ flex:1 }}><Field label="Paga aluguel?" value={cd.pagaAluguel} onChange={v=>setCD("pagaAluguel",v)} min={0} max={10000} step={100} suffix="R$"/></div>
+                    </div>
+
+                    {/* Comprometimento */}
+                    <div style={{ background: comprOk ? "rgba(212,120,30,0.06)" : "rgba(239,68,68,0.06)", border: `1px solid ${comprOk ? "rgba(212,120,30,0.15)" : "rgba(239,68,68,0.15)"}`, borderRadius:8, padding:12, marginBottom:14 }}>
+                      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                        <div>
+                          <div style={{ fontSize:9, fontWeight:700, color:"#6B7280" }}>COMPROMETIMENTO DE RENDA</div>
+                          <div style={{ fontSize:8, color:"#4B5563" }}>Parcela + Aluguel = {f(cd.quantoPorMes + cd.pagaAluguel)} / Renda {f(cd.renda)}</div>
+                        </div>
+                        <div style={{ fontSize:24, fontWeight:900, color: comprOk ? "#D4781E" : "#EF4444", fontFamily:"'JetBrains Mono',monospace" }}>{comprometimento}%</div>
+                      </div>
+                      <MiniBar pct={comprometimento/33} color={comprOk ? "#D4781E" : "#EF4444"} />
+                      <div style={{ fontSize:9, color: comprOk ? "#D4781E" : "#EF4444", marginTop:4, fontWeight:600 }}>
+                        {comprOk ? "Dentro do limite (≤33%)" : "ACIMA do limite. Parcela + aluguel > 1/3 da renda. Ajustar valores."}
+                      </div>
+                    </div>
+
+                    <div style={{ marginBottom:10 }}>
+                      <label style={{ fontSize:10, fontWeight:700, color:"#6B7280", display:"block", marginBottom:4 }}>Decide sozinho?</label>
+                      <div style={{ display:"flex", gap:6 }}>
+                        {[["sim","Sim, decide sozinho"],["nao","Precisa consultar alguém"]].map(([k,v])=>(
+                          <button key={k} onClick={()=>setCD("decideSozinho",k)} style={{ flex:1, padding:"8px", borderRadius:6, border: cd.decideSozinho===k ? "1.5px solid #D4781E" : "1px solid rgba(255,255,255,0.06)", background: cd.decideSozinho===k ? "rgba(212,120,30,0.08)" : "transparent", color: cd.decideSozinho===k ? "#D4781E" : "#6B7280", fontSize:10, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>{v}</button>
+                        ))}
+                      </div>
+                      {cd.decideSozinho === "nao" && (
+                        <div style={{ marginTop:6, background:"rgba(239,68,68,0.06)", borderRadius:6, padding:8, fontSize:9, color:"#F59E0B", fontWeight:600 }}>
+                          Convidar a outra pessoa para a próxima call. Não apresente oferta sem o decisor presente.
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Paráfrase */}
+                    <div style={{ background:"rgba(139,92,246,0.06)", border:"1px solid rgba(139,92,246,0.12)", borderRadius:8, padding:12, marginBottom:14 }}>
+                      <div style={{ fontSize:9, fontWeight:700, color:"#8B5CF6", marginBottom:6 }}>PARAFRASEAR AGORA</div>
+                      <div style={{ fontSize:11, color:"#C9CDD4", lineHeight:1.6, fontStyle:"italic" }}>
+                        "{cd.nomeCliente || "Cliente"}, deixa eu ver se entendi: você quer {cd.oQueComprar === "imovel" ? "um imóvel" : cd.oQueComprar === "veiculo" ? "um veículo" : "comprar algo"} de aproximadamente {f(cd.quantoCusta)},
+                        {cd.quantoEntrada > 0 ? ` tem ${f(cd.quantoEntrada)} de entrada,` : " não tem entrada,"}
+                        consegue pagar até {f(cd.quantoPorMes)}/mês{cd.pagaAluguel > 0 ? ` além do aluguel de ${f(cd.pagaAluguel)}` : ""},
+                        e {cd.praQuando === "0" ? "não tem pressa" : `quer pra ${cd.praQuando} meses`}. É isso?"
+                      </div>
+                    </div>
+
+                    <div style={{ marginBottom:10 }}>
+                      <label style={{ fontSize:10, fontWeight:700, color:"#6B7280", display:"block", marginBottom:4 }}>Tipo / Administradora</label>
+                      <div style={{ display:"flex", flexWrap:"wrap", gap:4 }}>
+                        {Object.entries(PRESETS).map(([k,v])=>(
+                          <button key={k} onClick={()=>setCD("tipoAdm",k)} style={{ padding:"6px 10px", borderRadius:6, border: cd.tipoAdm===k ? "1.5px solid #D4781E" : "1px solid rgba(255,255,255,0.05)", background: cd.tipoAdm===k ? "rgba(212,120,30,0.08)" : "transparent", color: cd.tipoAdm===k ? "#D4781E" : "#6B7280", fontSize:9, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>{v.label}</button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <button onClick={()=>setCloserStep(3)} style={{ width:"100%", padding:"14px", borderRadius:10, border:"none", background:"linear-gradient(135deg,#D4781E,#A85A15)", color:"#fff", fontSize:14, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+                      Perfil levantado → Montar Oferta
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* STEP 3 — OFERTA */}
+              {closerStep === 3 && (
+                <div>
+                  <div style={{ ...card(false,"#D4781E"), padding:20 }}>
+                    <div style={{ fontSize:14, fontWeight:800, color:"#fff", marginBottom:4 }}>3. Oferta Irrecusável</div>
+                    <div style={{ fontSize:10, color:"#D4781E", marginBottom:14, fontWeight:600 }}>"Eu não quero te vender consórcio. Eu quero te entregar o bem."</div>
+
+                    <div style={{ background:"rgba(212,120,30,0.06)", borderRadius:8, padding:12, marginBottom:14 }}>
+                      <div style={{ fontSize:9, fontWeight:700, color:"#D4781E", marginBottom:6 }}>REGRAS DA OFERTA</div>
+                      <div style={{ fontSize:10, color:"#C9CDD4", lineHeight:1.7 }}>
+                        Proibido fazer palestra de consórcio. <strong style={{ color:"#fff" }}>Conecte à dor do cliente.</strong><br/>
+                        Mínimo técnico — não fale taxa a menos que perguntem.<br/>
+                        O consórcio é <strong style={{ color:"#fff" }}>um meio para um fim</strong>, nunca o produto.
+                      </div>
+                    </div>
+
+                    {/* Resumo do cliente */}
+                    <div style={{ background:"rgba(255,255,255,0.02)", borderRadius:8, padding:12, marginBottom:14, border:"1px solid rgba(255,255,255,0.04)" }}>
+                      <div style={{ fontSize:9, fontWeight:700, color:"#6B7280", marginBottom:6 }}>PERFIL {(cd.nomeCliente || "CLIENTE").toUpperCase()}</div>
+                      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8 }}>
+                        {[["Quer",f(cd.quantoCusta)],["Entrada",cd.quantoEntrada > 0 ? f(cd.quantoEntrada) : "Zero"],["Parcela máx",f(cd.quantoPorMes)],["Renda",f(cd.renda)],["Aluguel",cd.pagaAluguel > 0 ? f(cd.pagaAluguel) : "Não"],["Prazo",cd.praQuando === "0" ? "Sem pressa" : cd.praQuando+"m"]].map(([k,v],i) => (
+                          <div key={i}><div style={{ fontSize:7, color:"#4B5563" }}>{k}</div><div style={{ fontSize:12, fontWeight:800, color:"#fff", fontFamily:"'JetBrains Mono',monospace" }}>{v}</div></div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <button onClick={()=>setCloserStep(4)} style={{ width:"100%", padding:"14px", borderRadius:10, border:"none", background:"linear-gradient(135deg,#D4781E,#A85A15)", color:"#fff", fontSize:14, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+                      Gerar Simulação Monte Carlo →
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* STEP 4 — VALORIZAÇÃO (com resultados) */}
+              {closerStep === 4 && closerEstrategias.length > 0 && (
+                <div>
+                  <div style={{ fontSize:14, fontWeight:800, color:"#fff", marginBottom:4 }}>4. Valorização</div>
+                  <div style={{ fontSize:10, color:"#D4781E", marginBottom:14, fontWeight:600 }}>"Se eu conseguir isso pra você, seria um bom negócio?"</div>
+
+                  <div style={{ background:"rgba(255,255,255,0.02)", borderRadius:8, padding:10, marginBottom:14, border:"1px solid rgba(255,255,255,0.04)", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                    <div style={{ fontSize:10, color:"#6B7280" }}>{cd.nomeCliente || "Cliente"} quer {f(cd.quantoCusta)} • {PRESETS[cd.tipoAdm]?.label}</div>
+                    <div style={{ fontSize:8, color:"#D4781E", fontWeight:700 }}>Monte Carlo rodado</div>
+                  </div>
+
+                  {closerEstrategias.map((e,i) => (
+                    <details key={i} style={{ marginBottom:10 }} open={i===0}>
+                      <summary style={{ ...card(i===0, e.statusCor), cursor:"pointer", listStyle:"none", position:"relative" }}>
+                        {i === 0 && <div style={{ position:"absolute", top:-8, right:100, background:"linear-gradient(135deg,#D4781E,#A85A15)", color:"#fff", fontSize:7, fontWeight:800, padding:"3px 8px", borderRadius:4 }}>RECOMENDADA</div>}
+                        <div style={{ position:"absolute", top:-8, right:12, background:e.statusCor, color:"#fff", fontSize:7, fontWeight:800, padding:"3px 8px", borderRadius:4 }}>{e.status} {pc1(e.mc.probabilidade)}</div>
+                        <div style={{ fontSize:14, fontWeight:800, color:"#fff", marginBottom:2 }}>{e.nome}</div>
+                        <div style={{ fontSize:10, color:"#6B7280", marginBottom:8 }}>{e.sub}</div>
+                        <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
+                          {[["CARTA",f(e.credito),"#fff"],["DISPONÍVEL",f(e.credLib),"#D4781E"],["PARCELA",f2(e.parcela)+"/mês","#fff"],["TAXA EF.",pc(e.taxaAA)+" a.a.","#D4781E"],["CONTEMP.",`~${e.mc.mesMedio}m`,e.statusCor]].map(([k,v,c],j)=>(
+                            <div key={j}><div style={{ fontSize:7, color:"#4B5563" }}>{k}</div><div style={{ fontSize:13, fontWeight:800, color:c, fontFamily:"'JetBrains Mono',monospace" }}>{v}</div></div>
+                          ))}
+                        </div>
+                      </summary>
+                      <div style={{ padding:"0 4px", marginTop:-4 }}><ResultBlock r={e} /></div>
+                    </details>
+                  ))}
+
+                  {/* Frases de valorização */}
+                  <div style={{ background:"rgba(139,92,246,0.06)", border:"1px solid rgba(139,92,246,0.12)", borderRadius:8, padding:12, marginBottom:14 }}>
+                    <div style={{ fontSize:9, fontWeight:700, color:"#8B5CF6", marginBottom:6 }}>TERMÔMETRO — FALE AGORA</div>
+                    <div style={{ fontSize:11, color:"#C9CDD4", lineHeight:1.8 }}>
+                      "{cd.nomeCliente || "Nome"}, com essa estratégia você consegue {f(closerEstrategias[0]?.credLib || 0)} disponíveis, pagando {f2(closerEstrategias[0]?.parcela || 0)} por mês. <strong style={{ color:"#D4781E" }}>Se eu conseguir isso pra você, seria um bom negócio?</strong>"<br/><br/>
+                      Se SIM → <strong style={{ color:"#D4781E" }}>"Me passa seus dados para verificar a aprovação?"</strong>
+                    </div>
+                  </div>
+
+                  <div style={{ display:"flex", gap:8 }}>
+                    <button onClick={()=>setCloserStep(2)} style={{ flex:1, padding:"12px", borderRadius:10, border:"1px solid rgba(255,255,255,0.06)", background:"transparent", color:"#6B7280", fontSize:12, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>
+                      ← Voltar ao Perfil
+                    </button>
+                    <button onClick={()=>setCloserStep(5)} style={{ flex:2, padding:"14px", borderRadius:10, border:"none", background:"linear-gradient(135deg,#D4781E,#A85A15)", color:"#fff", fontSize:14, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+                      Cliente valorizou → Fechar
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* STEP 5 — FECHAMENTO */}
+              {closerStep === 5 && (
+                <div>
+                  <div style={{ ...card(false,"#D4781E"), padding:20 }}>
+                    <div style={{ fontSize:14, fontWeight:800, color:"#fff", marginBottom:4 }}>5. Fechamento</div>
+                    <div style={{ fontSize:10, color:"#D4781E", marginBottom:14, fontWeight:600 }}>"Técnica de fechamento é um bom levantamento de perfil com uma oferta congruente."</div>
+
+                    <div style={{ background:"rgba(212,120,30,0.06)", borderRadius:8, padding:12, marginBottom:14 }}>
+                      <div style={{ fontSize:9, fontWeight:700, color:"#D4781E", marginBottom:8 }}>CHECKLIST DE FECHAMENTO</div>
+                      {[
+                        "Enviar ficha cadastral (dados do cliente)",
+                        "Verificar aprovação / crédito",
+                        "Encontrar grupo ideal",
+                        "Emitir contrato",
+                        "Confirmar forma de pagamento da 1ª parcela",
+                        "Agendar próximo contato com DATA + HORA",
+                      ].map((item,i) => (
+                        <div key={i} style={{ fontSize:11, color:"#C9CDD4", padding:"5px 0", borderBottom:"1px solid rgba(255,255,255,0.02)", display:"flex", gap:8, alignItems:"center" }}>
+                          <span style={{ color:"#D4781E", fontSize:14, fontWeight:700 }}>□</span> {item}
+                        </div>
+                      ))}
+                    </div>
+
+                    <div style={{ background:"rgba(255,255,255,0.02)", borderRadius:8, padding:12, marginBottom:14, border:"1px solid rgba(255,255,255,0.04)" }}>
+                      <div style={{ fontSize:9, fontWeight:700, color:"#6B7280", marginBottom:6 }}>RESUMO DA VENDA</div>
+                      {[
+                        ["Cliente", cd.nomeCliente || "—"],
+                        ["Bem", cd.oQueComprar === "imovel" ? "Imóvel" : cd.oQueComprar === "veiculo" ? "Veículo" : cd.oQueComprar],
+                        ["Crédito desejado", f(cd.quantoCusta)],
+                        ["Entrada", cd.quantoEntrada > 0 ? f(cd.quantoEntrada) : "Zero"],
+                        ["Parcela máx.", f(cd.quantoPorMes)],
+                        ["Renda", f(cd.renda)],
+                        ["Comprometimento", comprometimento + "%"],
+                        ["Estratégia", closerEstrategias[0]?.nome || "—"],
+                        ["Carta", closerEstrategias[0] ? f(closerEstrategias[0].credito) : "—"],
+                        ["Parcela simulada", closerEstrategias[0] ? f2(closerEstrategias[0].parcela) : "—"],
+                        ["Prob. contemplação", closerEstrategias[0] ? pc1(closerEstrategias[0].mc.probabilidade) : "—"],
+                      ].map(([k,v],i) => (
+                        <div key={i} style={{ display:"flex", justifyContent:"space-between", padding:"3px 0", borderBottom:"1px solid rgba(255,255,255,0.02)" }}>
+                          <span style={{ fontSize:9, color:"#6B7280" }}>{k}</span>
+                          <span style={{ fontSize:10, fontWeight:700, color:"#fff", fontFamily:"'JetBrains Mono',monospace" }}>{v}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Objeções */}
+                    <div style={{ background:"rgba(239,68,68,0.04)", border:"1px solid rgba(239,68,68,0.1)", borderRadius:8, padding:12, marginBottom:14 }}>
+                      <div style={{ fontSize:9, fontWeight:700, color:"#EF4444", marginBottom:8 }}>SE APARECER OBJEÇÃO</div>
+                      {[
+                        ['"Vou pensar"', '"O que especificamente você precisa pensar?" → Volta pro perfil.'],
+                        ['"Preciso falar com esposa/marido"', 'Convida pra nova call. Não apresente sem o decisor.'],
+                        ['"E se demorar?"', `"Mesmo contemplando no último mês, pagando ${closerEstrategias[0] ? f2(closerEstrategias[0].parcela) : "a parcela"}, você passaria fome? Não? Então qual o problema?"`],
+                        ['"Consórcio é ruim"', 'Não defenda. Volte à DOR. "Você tem medo de morrer sem o primeiro imóvel?"'],
+                      ].map(([obj,resp],i) => (
+                        <div key={i} style={{ marginBottom:8 }}>
+                          <div style={{ fontSize:10, fontWeight:700, color:"#EF4444" }}>{obj}</div>
+                          <div style={{ fontSize:10, color:"#C9CDD4", marginTop:2 }}>{resp}</div>
+                        </div>
+                      ))}
+                      <div style={{ fontSize:9, color:"#F59E0B", fontWeight:600, marginTop:6 }}>Regra: objeção = você errou no levantamento. Volta pra trás, não empurra pra frente.</div>
+                    </div>
+
+                    <button onClick={()=>window.print()} style={{ width:"100%", padding:"14px", borderRadius:10, border:"none", background:"linear-gradient(135deg,#D4781E,#A85A15)", color:"#fff", fontSize:14, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+                      Imprimir Resumo / PDF
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })()}
+
       </div>
 
       <div style={{ textAlign:"center", padding:"24px 16px", borderTop:"1px solid rgba(255,255,255,0.03)", marginTop:30 }}>
