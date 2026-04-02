@@ -588,7 +588,7 @@ const Field = ({label, sub, value, onChange, min, max, step, suffix, cor, placeh
       </label>
       <div style={{ display:"flex" }}>
         <input type={isText ? "text" : "number"} value={value} onChange={e=>onChange(isText ? e.target.value : Number(e.target.value))} min={min} max={max} step={step} placeholder={placeholder}
-          style={{ flex:1, padding:"10px 12px", borderRadius:suffix?"8px 0 0 8px":"8px", border:`1px solid ${cor||"rgba(255,255,255,0.08)"}`, background:`${(cor||"#fff")}08`, color:"#fff", fontSize: isText ? 14 : 16, fontWeight:700, fontFamily: isText ? "inherit" : "'JetBrains Mono',monospace", outline:"none", boxSizing:"border-box" }}/>
+          style={{ flex:1, padding:"10px 12px", borderRadius:suffix?"8px 0 0 8px":"8px", border:`1px solid ${cor||"rgba(255,255,255,0.08)"}`, background: cor ? `${cor}12` : "rgba(255,255,255,0.03)", color:"#fff", fontSize: isText ? 14 : 16, fontWeight:700, fontFamily: isText ? "inherit" : "'JetBrains Mono',monospace", outline:"none", boxSizing:"border-box" }}/>
         {suffix && <div style={{ padding:"10px 12px", background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.08)", borderLeft:"none", borderRadius:"0 8px 8px 0", fontSize:12, color:"#6B7280", fontWeight:600 }}>{suffix}</div>}
       </div>
     </div>
