@@ -1,2 +1,64 @@
 * { margin: 0; padding: 0; box-sizing: border-box; }
-body { background: #0A0A0A; }
+body { background: #0A0A0A; -webkit-font-smoothing: antialiased; }
+
+/* Responsivo global */
+input[type="number"], input[type="text"], textarea, select {
+  font-size: 16px !important; /* Previne zoom no iOS */
+}
+
+/* Container principal */
+.c31-container { max-width: 860px; margin: 0 auto; padding: 16px; }
+
+@media (max-width: 640px) {
+  .c31-container { padding: 12px; }
+
+  /* Cards lado a lado viram stack */
+  .c31-row { flex-direction: column !important; }
+  .c31-row > * { flex: 1 1 100% !important; }
+
+  /* Header compacto */
+  .c31-header-inner { gap: 8px !important; }
+  .c31-header-inner img:first-child { height: 28px !important; }
+  .c31-header-sub { display: none !important; }
+
+  /* Footer stack */
+  .c31-footer-inner { flex-direction: column !important; gap: 12px !important; align-items: center !important; }
+  .c31-footer-inner > div:last-child { text-align: center !important; }
+
+  /* Closer step tags wrap */
+  .c31-steps-tags { flex-wrap: wrap !important; gap: 4px !important; }
+
+  /* Histograma menor */
+  .c31-histograma { height: 36px !important; }
+
+  /* Chat flutuante full width mobile */
+  .c31-chat { width: calc(100vw - 16px) !important; height: calc(100vh - 80px) !important; bottom: 8px !important; right: 8px !important; border-radius: 12px !important; }
+  .c31-chat-bubble { bottom: 12px !important; right: 12px !important; width: 48px !important; height: 48px !important; }
+
+  /* Grids menores */
+  .c31-grid-4 { grid-template-columns: 1fr 1fr !important; }
+
+  /* Metrics row wrap */
+  .c31-metrics { flex-wrap: wrap !important; gap: 6px !important; }
+  .c31-metrics > div { min-width: 60px !important; }
+}
+
+@media (min-width: 641px) and (max-width: 1024px) {
+  .c31-container { max-width: 720px; padding: 16px; }
+}
+
+@media (min-width: 1440px) {
+  .c31-container { max-width: 960px; }
+}
+
+/* Print */
+@media print {
+  body { background: #fff !important; }
+  .c31-chat, .c31-chat-bubble, .c31-import-btn, .c31-header-actions { display: none !important; }
+}
+
+/* Scrollbar dark */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.15); }

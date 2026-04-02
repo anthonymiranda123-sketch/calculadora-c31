@@ -666,7 +666,7 @@ function ChatCloser() {
 
   if (!open) {
     return (
-      <div onClick={()=>{setOpen(true);setTimeout(()=>inputRef.current?.focus(),100);}} style={{
+      <div className="c31-chat-bubble" onClick={()=>{setOpen(true);setTimeout(()=>inputRef.current?.focus(),100);}} style={{
         position:"fixed", bottom:20, right:20, width:56, height:56, borderRadius:16,
         background:"linear-gradient(135deg,#D4781E,#A85A15)", cursor:"pointer",
         display:"flex", alignItems:"center", justifyContent:"center",
@@ -683,7 +683,7 @@ function ChatCloser() {
   }
 
   return (
-    <div style={{
+    <div className="c31-chat" style={{
       position:"fixed", bottom:20, right:20, width:380, maxWidth:"calc(100vw - 32px)",
       height:520, maxHeight:"calc(100vh - 40px)",
       background:"#0E0E0E", border:"1px solid rgba(212,120,30,0.2)", borderRadius:16,
@@ -991,7 +991,7 @@ export default function App() {
           <div style={{ fontSize:40, fontWeight:900, color:"#D4781E", fontFamily:"'JetBrains Mono',monospace", lineHeight:1.1 }}>{pc(r.taxaAA)} <span style={{ fontSize:14, color:"rgba(212,120,30,0.5)" }}>a.a.</span></div>
           <div style={{ fontSize:12, color:"rgba(255,255,255,0.5)" }}>{pc(r.taxaAM)} a.m. • Juros simples sobre {f(r.credEmp)}</div>
         </div>
-        <div style={{ display:"flex", justifyContent:"space-around", flexWrap:"wrap", gap:8 }}>
+        <div className="c31-metrics" style={{ display:"flex", justifyContent:"space-around", flexWrap:"wrap", gap:8 }}>
           {[["Emprestado",f(r.credEmp),"#D4781E"],["Juros",f(r.juros),"#EF4444"],["Parcela",f2(r.parcela)+"/mês","#fff"]].map(([k,v,c],i)=>(
             <div key={i} style={{ textAlign:"center" }}><div style={{ fontSize:8, color:"rgba(255,255,255,0.3)" }}>{k}</div><div style={{ fontSize:16, fontWeight:800, color:c, fontFamily:"'JetBrains Mono',monospace" }}>{v}</div></div>
           ))}
@@ -1088,7 +1088,7 @@ export default function App() {
                     <span style={{ fontSize:12, fontWeight:800, color:h.g.cor }}>Grupo {h.g.id}</span>
                     <span style={{ fontSize:9, color:"#4B5563", marginLeft:"auto" }}>{h.g.prazo}m • {h.g.taxa}%+{h.g.fr}% • Emb {h.g.embutidoMax}%</span>
                   </div>
-                  <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:6 }}>
+                  <div style={{ display:"flex", gap:8, flexWrap:"wrap", marginBottom:6 }}>
                     {[["CARTA",f(h.credMaisProx),"#fff"],["DISPONÍVEL",f(h.credLib),"#D4781E"],["EMPRESTADO",f(h.credEmp),"#D4781E"],["PARCELA",f2(h.parcela),"#fff"],["TAXA EF.",pc(h.taxaAA)+" a.a.","#D4781E"],["CONTEMP.",`~${h.mc.mesMedio}m`,h.statusCor]].map(([k,v,c],i) => (
                       <div key={i} style={{ minWidth:70 }}><div style={{ fontSize:7, color:"#4B5563" }}>{k}</div><div style={{ fontSize:12, fontWeight:800, color:c, fontFamily:"'JetBrains Mono',monospace" }}>{v}</div></div>
                     ))}
@@ -1099,7 +1099,7 @@ export default function App() {
                 <div style={{ padding:"8px 4px", marginTop:-4 }}>
                   <div style={{ background:"rgba(255,255,255,0.02)", border:"1px solid rgba(255,255,255,0.04)", borderRadius:8, padding:12, marginBottom:8 }}>
                     <div style={{ fontSize:9, fontWeight:700, color:"#6B7280", marginBottom:6 }}>DADOS GRUPO {h.g.id}</div>
-                    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr 1fr", gap:8 }}>
+                    <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(70px, 1fr))", gap:8 }}>
                       {[["Prazo",`${h.g.prazo}m`],["Taxa",`${h.g.taxa}%`],["FR",`${h.g.fr}%`],["Venc.",h.g.venc],["Partic.",h.g.partic?.toLocaleString("pt-BR")||"—"],["Contemp/m",h.g.contemp],["Lance méd.",`${h.g.lanceMedio}%`],["Fixos",h.g.lancesFixos||"—"],["Emb. máx",`${h.g.embutidoMax}%`],["% Fixos",h.g.pctFixos?`${h.g.pctFixos}%`:"—"],["Sort/mês",h.g.partic?pc1(h.g.contemp/h.g.partic):"—"],["Vagas",h.g.vagas?.toLocaleString("pt-BR")||"—"]].map(([k,v],i)=>(
                         <div key={i}><div style={{ fontSize:7, color:"#4B5563" }}>{k}</div><div style={{ fontSize:10, fontWeight:700, color:"#D1D5DB" }}>{v}</div></div>
                       ))}
@@ -1201,15 +1201,15 @@ export default function App() {
       <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700;800&display=swap" rel="stylesheet"/>
 
       <div style={{ background:"linear-gradient(160deg,#1A1008,#120C06 70%,#0A0A0A)", padding:"14px 16px", borderBottom:"1px solid rgba(212,120,30,0.1)" }}>
-        <div style={{ maxWidth:860, margin:"0 auto", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-          <div style={{ display:"flex", alignItems:"center", gap:14 }}>
+        <div className="c31-container" style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:0 }}>
+          <div className="c31-header-inner" style={{ display:"flex", alignItems:"center", gap:14 }}>
             <img src="/gm-icon.png" alt="Grupo Mirandas" style={{ height:36, borderRadius:6, opacity:0.9 }}/>
             <div style={{ width:1, height:28, background:"rgba(255,255,255,0.08)" }}/>
             <img src="/logo-branco.png" alt="Código 31" style={{ height:24 }}/>
           </div>
-          <div style={{ display:"flex", gap:6, alignItems:"center" }}>
+          <div className="c31-header-actions" style={{ display:"flex", gap:6, alignItems:"center" }}>
             {gruposImportados.length > 0 && <span style={{ fontSize:8, color:"#D4781E", fontWeight:700, background:"rgba(212,120,30,0.1)", padding:"2px 6px", borderRadius:4 }}>{GRUPOS_ATIVOS.length} grupos</span>}
-            <button onClick={()=>setShowImport(v=>!v)} style={{ padding:"4px 10px", borderRadius:5, border:`1px solid ${showImport?"rgba(212,120,30,0.3)":"rgba(255,255,255,0.06)"}`, background:showImport?"rgba(212,120,30,0.08)":"transparent", color:showImport?"#D4781E":"#6B7280", fontSize:9, cursor:"pointer", fontFamily:"inherit", fontWeight:600 }}>Importar Planilhas</button>
+            <button className="c31-import-btn" onClick={()=>setShowImport(v=>!v)} style={{ padding:"4px 10px", borderRadius:5, border:`1px solid ${showImport?"rgba(212,120,30,0.3)":"rgba(255,255,255,0.06)"}`, background:showImport?"rgba(212,120,30,0.08)":"transparent", color:showImport?"#D4781E":"#6B7280", fontSize:9, cursor:"pointer", fontFamily:"inherit", fontWeight:600 }}>Importar Planilhas</button>
             {modo && <button onClick={()=>{setModo(null);setCalculado(false);}} style={{ padding:"4px 10px", borderRadius:5, border:"1px solid rgba(255,255,255,0.06)", background:"transparent", color:"#6B7280", fontSize:9, cursor:"pointer", fontFamily:"inherit" }}>← Início</button>}
           </div>
         </div>
@@ -1217,7 +1217,7 @@ export default function App() {
 
       {/* PAINEL DE IMPORTAÇÃO */}
       {showImport && (
-        <div style={{ maxWidth:860, margin:"0 auto", padding:"0 16px" }}>
+        <div className="c31-container" style={{ paddingTop:0, paddingBottom:0 }}>
           <div style={{ background:"rgba(255,255,255,0.02)", border:"1px solid rgba(255,255,255,0.06)", borderRadius:12, padding:16, marginBottom:16 }}>
             <div style={{ fontSize:12, fontWeight:700, color:"#fff", marginBottom:10 }}>Importar Planilhas</div>
             <div style={{ fontSize:10, color:"#6B7280", marginBottom:12, lineHeight:1.6 }}>
@@ -1264,7 +1264,7 @@ export default function App() {
         </div>
       )}
 
-      <div style={{ maxWidth:860, margin:"0 auto", padding:"16px" }}>
+      <div className="c31-container">
 
         {/* ESCOLHA */}
         {!modo && (
@@ -1274,12 +1274,12 @@ export default function App() {
             {/* MODO CLOSER — destaque */}
             <div onClick={()=>{setModo("closer");setCloserStep(1);}} style={{ ...card(false,"#D4781E"), cursor:"pointer", padding:20, marginBottom:16, position:"relative", overflow:"hidden" }}>
               <div style={{ position:"absolute", top:0, right:0, background:"linear-gradient(135deg,#D4781E,#A85A15)", padding:"4px 14px", borderRadius:"0 0 0 10px", fontSize:8, fontWeight:800, color:"#fff", letterSpacing:1 }}>MÉTODO ANTHONY</div>
-              <div style={{ display:"flex", alignItems:"center", gap:16 }}>
-                <div style={{ fontSize:40 }}>🎯</div>
-                <div>
+              <div className="c31-row" style={{ display:"flex", alignItems:"center", gap:16 }}>
+                <div style={{ fontSize:40, flexShrink:0 }}>🎯</div>
+                <div style={{ flex:1 }}>
                   <div style={{ fontSize:18, fontWeight:900, color:"#fff", marginBottom:2 }}>Modo Closer</div>
                   <div style={{ fontSize:11, color:"#9CA3AF", lineHeight:1.5 }}>Guia passo a passo do framework de 5 etapas. Levanta perfil, monta oferta irrecusável e fecha.</div>
-                  <div style={{ display:"flex", gap:8, marginTop:8 }}>
+                  <div className="c31-steps-tags" style={{ display:"flex", gap:6, marginTop:8, flexWrap:"wrap" }}>
                     {["Abordagem","Perfil","Oferta","Valorização","Fechamento"].map((s,i)=>(
                       <span key={i} style={{ fontSize:7, fontWeight:700, color:"#D4781E", background:"rgba(212,120,30,0.1)", padding:"2px 6px", borderRadius:3, letterSpacing:0.5 }}>{i+1}. {s}</span>
                     ))}
@@ -1288,7 +1288,7 @@ export default function App() {
               </div>
             </div>
 
-            <div style={{ display:"flex", gap:12 }}>
+            <div className="c31-row" style={{ display:"flex", gap:12 }}>
               {[["manual","🔧","Manual","Preenche tudo: crédito, taxa, prazo, lances","#D4781E"],["smart","⚡","Inteligente","Só crédito + tipo. Sistema calcula 3 estratégias.","#D4781E"]].map(([k,ico,tit,desc,cor])=>(
                 <div key={k} onClick={()=>setModo(k)} style={{ flex:1, ...card(false,cor), cursor:"pointer", textAlign:"center", padding:24 }}>
                   <div style={{ fontSize:32, marginBottom:8 }}>{ico}</div>
@@ -1712,7 +1712,7 @@ export default function App() {
       </div>
 
       <div style={{ borderTop:"1px solid rgba(255,255,255,0.04)", marginTop:30, padding:"28px 16px 20px" }}>
-        <div style={{ maxWidth:860, margin:"0 auto", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+        <div className="c31-container c31-footer-inner" style={{ display:"flex", alignItems:"center", justifyContent:"space-between", paddingTop:0, paddingBottom:0 }}>
           <div style={{ display:"flex", alignItems:"center", gap:12 }}>
             <img src="/gm-logo-texto.png" alt="Grupo Mirandas" style={{ height:32, opacity:0.6 }}/>
             <div style={{ width:1, height:20, background:"rgba(255,255,255,0.06)" }}/>
