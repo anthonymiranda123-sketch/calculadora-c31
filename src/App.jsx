@@ -624,13 +624,22 @@ const Histograma = ({dist, maxMeses=60}) => {
 // ═══════════════════════════════════════════════════════════
 function ChatCloser() {
   const [open, setOpen] = useState(false);
-  const [msgs, setMsgs] = useState([
-    { role:"assistant", content:"E aí, como tá a call? Me fala o que o cliente disse que eu te digo como responder." }
-  ]);
+  const [papel, setPapel] = useState(null); // null = escolhendo, "closer" ou "assistente"
+  const [msgs, setMsgs] = useState([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const chatEndRef = useRef(null);
   const inputRef = useRef(null);
+
+  const iniciarChat = useCallback((p) => {
+    setPapel(p);
+    setMsgs([{
+      role:"assistant",
+      content: p === "closer"
+        ? "E aí closer, como tá a call? Me fala o que o cliente disse que eu te digo como responder. Se quiser, cola a conversa do WhatsApp que eu analiso."
+        : "Fala assistente! Me conta sobre o lead. Qual o nome, de onde veio, o que ele falou? Vou te ajudar a aquecer e agendar pra reunião com o closer."
+    }]);
+  }, []);
 
   const scrollToBottom = useCallback(() => {
     setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior:"smooth" }), 50);
@@ -649,7 +658,7 @@ function ChatCloser() {
       const res = await fetch("/api/chat", {
         method:"POST",
         headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({ messages: newMsgs.slice(-10) }), // últimas 10 msgs pra contexto
+        body: JSON.stringify({ messages: newMsgs.slice(-10), papel }), // últimas 10 msgs pra contexto
       });
       const data = await res.json();
       if (data.content) {
@@ -698,17 +707,48 @@ function ChatCloser() {
         background:"linear-gradient(135deg,#1A1008,#0E0E0E)", borderRadius:"16px 16px 0 0",
       }}>
         <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-          <div style={{ width:8, height:8, borderRadius:"50%", background:"#D4781E", boxShadow:"0 0 8px rgba(212,120,30,0.5)" }}/>
+          <div style={{ width:8, height:8, borderRadius:"50%", background: papel === "closer" ? "#D4781E" : papel === "assistente" ? "#8B5CF6" : "#6B7280", boxShadow: papel ? `0 0 8px ${papel === "closer" ? "rgba(212,120,30,0.5)" : "rgba(139,92,246,0.5)"}` : "none" }}/>
           <div>
             <div style={{ fontSize:13, fontWeight:800, color:"#fff" }}>Coach Anthony</div>
-            <div style={{ fontSize:8, color:"#6B7280" }}>IA treinada com suas calls reais</div>
+            <div style={{ fontSize:8, color:"#6B7280" }}>{papel === "closer" ? "Modo Closer — foco em fechar" : papel === "assistente" ? "Modo Assistente — aquecer e agendar" : "Escolha seu papel"}</div>
           </div>
         </div>
-        <button onClick={()=>setOpen(false)} style={{ background:"none", border:"none", color:"#6B7280", cursor:"pointer", fontSize:18, padding:4 }}>x</button>
+        <div style={{ display:"flex", gap:4, alignItems:"center" }}>
+          {papel && <button onClick={()=>{setPapel(null);setMsgs([]);}} style={{ background:"none", border:"1px solid rgba(255,255,255,0.06)", color:"#4B5563", cursor:"pointer", fontSize:8, padding:"2px 6px", borderRadius:4, fontFamily:"inherit" }}>trocar</button>}
+          <button onClick={()=>setOpen(false)} style={{ background:"none", border:"none", color:"#6B7280", cursor:"pointer", fontSize:18, padding:4 }}>x</button>
+        </div>
       </div>
 
-      {/* Messages */}
-      <div style={{ flex:1, overflowY:"auto", padding:"12px 14px", display:"flex", flexDirection:"column", gap:10 }}>
+      {/* Role selector */}
+      {!papel && (
+        <div style={{ flex:1, display:"flex", flexDirection:"column", justifyContent:"center", padding:"20px 16px", gap:10 }}>
+          <div style={{ textAlign:"center", marginBottom:8 }}>
+            <div style={{ fontSize:14, fontWeight:800, color:"#fff", marginBottom:4 }}>Qual é o seu papel?</div>
+            <div style={{ fontSize:10, color:"#6B7280" }}>A IA adapta as respostas pro seu objetivo</div>
+          </div>
+          <div onClick={()=>iniciarChat("closer")} style={{ background:"rgba(212,120,30,0.06)", border:"1.5px solid rgba(212,120,30,0.2)", borderRadius:12, padding:16, cursor:"pointer" }}>
+            <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+              <div style={{ width:36, height:36, borderRadius:8, background:"linear-gradient(135deg,#D4781E,#A85A15)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, flexShrink:0 }}>🎯</div>
+              <div>
+                <div style={{ fontSize:13, fontWeight:800, color:"#D4781E" }}>Closer</div>
+                <div style={{ fontSize:10, color:"#9CA3AF", lineHeight:1.5 }}>Tô na call com o cliente. Preciso saber o que falar pra <strong style={{ color:"#fff" }}>fechar a venda</strong>.</div>
+              </div>
+            </div>
+          </div>
+          <div onClick={()=>iniciarChat("assistente")} style={{ background:"rgba(139,92,246,0.06)", border:"1.5px solid rgba(139,92,246,0.2)", borderRadius:12, padding:16, cursor:"pointer" }}>
+            <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+              <div style={{ width:36, height:36, borderRadius:8, background:"linear-gradient(135deg,#8B5CF6,#6D28D9)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, flexShrink:0 }}>📋</div>
+              <div>
+                <div style={{ fontSize:13, fontWeight:800, color:"#8B5CF6" }}>Assistente de Vendas</div>
+                <div style={{ fontSize:10, color:"#9CA3AF", lineHeight:1.5 }}>Preciso <strong style={{ color:"#fff" }}>aquecer o lead e agendar</strong> reunião com o closer.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Messages + Input — only when papel chosen */}
+      {papel && <><div style={{ flex:1, overflowY:"auto", padding:"12px 14px", display:"flex", flexDirection:"column", gap:10 }}>
         {msgs.map((m,i) => (
           <div key={i} style={{
             alignSelf: m.role === "user" ? "flex-end" : "flex-start",
@@ -753,14 +793,13 @@ function ChatCloser() {
         <div ref={chatEndRef}/>
       </div>
 
-      {/* Input */}
       <div style={{ padding:"10px 12px", borderTop:"1px solid rgba(255,255,255,0.06)", display:"flex", gap:8 }}>
         <input
           ref={inputRef}
           value={input}
           onChange={e=>setInput(e.target.value)}
           onKeyDown={e=>e.key==="Enter"&&!e.shiftKey&&send()}
-          placeholder="O que o cliente falou?"
+          placeholder={papel === "assistente" ? "O que o lead falou / perguntou?" : "O que o cliente falou?"}
           style={{
             flex:1, padding:"10px 12px", borderRadius:10,
             border:"1px solid rgba(255,255,255,0.08)", background:"rgba(255,255,255,0.03)",
@@ -769,7 +808,7 @@ function ChatCloser() {
         />
         <button onClick={send} disabled={loading || !input.trim()} style={{
           padding:"10px 16px", borderRadius:10, border:"none",
-          background: input.trim() ? "linear-gradient(135deg,#D4781E,#A85A15)" : "rgba(255,255,255,0.04)",
+          background: input.trim() ? `linear-gradient(135deg,${papel==="assistente"?"#8B5CF6,#6D28D9":"#D4781E,#A85A15"})` : "rgba(255,255,255,0.04)",
           color: input.trim() ? "#fff" : "#4B5563", fontSize:12, fontWeight:700,
           cursor: input.trim() ? "pointer" : "default", fontFamily:"inherit",
         }}>
@@ -777,16 +816,20 @@ function ChatCloser() {
         </button>
       </div>
 
-      {/* Quick actions */}
+      {/* Quick actions — different per role */}
       <div style={{ padding:"6px 12px 10px", display:"flex", gap:4, flexWrap:"wrap" }}>
-        {["Cliente disse 'vou pensar'","Como explicar consórcio?","Cliente não tem entrada","Cliente tem pressa","Cola conversa WhatsApp aqui","Analisa as dores mais comuns"].map((q,i)=>(
+        {(papel === "assistente" ? [
+          "Lead perguntou o que é consórcio","Lead disse que não tem interesse","Como aquecer esse lead?","Lead quer saber preço","Como confirmar reunião","Cola conversa WhatsApp","Lead não responde há 2 dias"
+        ] : [
+          "Cliente disse 'vou pensar'","Como explicar consórcio?","Cliente não tem entrada","Cliente tem pressa","Como fechar agora?","Cola conversa WhatsApp","Analisa as dores"
+        ]).map((q,i)=>(
           <button key={i} onClick={()=>{setInput(q);setTimeout(()=>inputRef.current?.focus(),50);}} style={{
-            padding:"4px 8px", borderRadius:6, border:"1px solid rgba(255,255,255,0.04)",
+            padding:"4px 8px", borderRadius:6, border:`1px solid ${papel==="assistente"?"rgba(139,92,246,0.08)":"rgba(255,255,255,0.04)"}`,
             background:"transparent", color:"#4B5563", fontSize:8, cursor:"pointer",
             fontFamily:"inherit", fontWeight:600,
           }}>{q}</button>
         ))}
-      </div>
+      </div></>}
     </div>
   );
 }

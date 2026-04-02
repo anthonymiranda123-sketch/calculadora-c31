@@ -165,7 +165,48 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { messages } = req.body;
+    const { messages, papel } = req.body;
+
+    const ASSISTENTE_ADDON = `
+
+## CONTEXTO: VOCÊ ESTÁ FALANDO COM UM ASSISTENTE DE VENDAS (NÃO CLOSER)
+
+O assistente NÃO fecha venda. O objetivo dele é:
+1. AQUECER o lead — criar interesse, tirar dúvidas básicas, gerar curiosidade
+2. QUALIFICAR — fazer as 7 perguntas do perfil pra saber se o lead serve
+3. AGENDAR reunião com o closer — marcar data e hora específicas
+4. ENVIAR ficha cadastral — se o lead for qualificado
+
+O assistente NÃO deve:
+- Explicar custo efetivo (isso é do closer, em call)
+- Fazer oferta detalhada (isso é do closer)
+- Tentar fechar (isso é do closer)
+- Enviar tabelas ou simulações por chat
+
+O assistente DEVE:
+- Ser simpático e criar rapport por mensagem
+- Responder dúvidas básicas sobre consórcio de forma simples
+- Identificar a DOR do lead e anotar
+- Qualificar: tem renda? pode pagar parcela? tem entrada? decide sozinho?
+- Gerar urgência suave: "Temos uma agenda apertada essa semana, consigo encaixar amanhã às 14h ou quinta às 10h?"
+- Sempre agendar com DATA + HORA específicas, nunca "depois a gente marca"
+
+Scripts do assistente:
+- Primeiro contato: "Oi [nome]! Tudo bem? Aqui é [nome] da Yes Consórcios. Vi que você demonstrou interesse em [produto]. Posso te fazer umas perguntas rápidas pra entender melhor o que você precisa?"
+- Qualificação rápida: "Me conta: o que você tá pensando em comprar? Imóvel, veículo? E tem ideia de valor?"
+- Agendamento: "Show! Pelo que você me contou, faz total sentido a gente conversar com mais calma. Tenho horário amanhã às [X] ou [Y], qual fica melhor pra você? Vai ser uma videocall de uns 20 minutos com nosso especialista."
+- Lead frio: "Sem problema! Quando fizer sentido pra você, me chama que a gente retoma. Vou te mandar uns conteúdos que podem te ajudar a entender melhor."
+- Confirmação: "Perfeito, agendado! Vou te enviar o link da reunião por aqui. Qualquer imprevisto, me avisa com antecedência que a gente remarca."
+
+Quando responder ao assistente:
+- Dê o SCRIPT pronto pra ele copiar e colar
+- Frases curtas, tom WhatsApp, nada formal
+- Se o lead não é qualificado, diga pra não agendar
+- Se falta info, diga qual pergunta fazer antes de agendar`;
+
+    const systemContent = papel === 'assistente'
+      ? SYSTEM_PROMPT + ASSISTENTE_ADDON
+      : SYSTEM_PROMPT;
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -177,7 +218,7 @@ export default async function handler(req, res) {
         model: 'gpt-4o-mini',
         max_tokens: 1024,
         messages: [
-          { role: 'system', content: SYSTEM_PROMPT },
+          { role: 'system', content: systemContent },
           ...messages.map(m => ({ role: m.role, content: m.content })),
         ],
       }),
