@@ -254,6 +254,99 @@ function parseLances(workbook, gruposExistentes) {
   return { updated, totalUpdates: Object.keys(updates).length };
 }
 
+// Parser para "LANCES CNP" — formato com sheets CNP-Imóvel, CNP-Automóvel, CNP-Pesados
+function parseLancesCNP(workbook) {
+  const grupos = [];
+  const tipoMap = { "CNP-Imóvel": "imovel", "CNP-Automóvel": "veiculo", "CNP-Pesados": "pesado" };
+
+  for (const [sheetName, tipo] of Object.entries(tipoMap)) {
+    const ws = workbook.Sheets[sheetName];
+    if (!ws) continue;
+    const raw = XLSX.utils.sheet_to_json(ws, { defval: null, header: 1 });
+    if (raw.length < 3) continue;
+
+    // Row 0 = dates, Row 1 = headers, Row 2+ = data
+    const headers = raw[1];
+
+    for (let i = 2; i < raw.length; i++) {
+      const r = raw[i];
+      if (!r || !r[0]) continue;
+      const grupoId = String(r[0]).replace("*", "").trim();
+      if (!grupoId || isNaN(Number(grupoId))) continue;
+
+      const partic = Number(r[1]) || null;
+      const venc = r[2] ? `Dia ${r[2]}` : "Dia 10";
+      const taxaAdm = Number(r[4]) || 0;
+      const fr = Number(r[5]) || 0;
+      const creditoMenor = Number(r[6]) || 0;
+      const creditoMaior = Number(r[7]) || 0;
+      const prazo = Number(r[10]) || 0;
+      const assemRealiz = Number(r[11]) || 0;
+
+      // Build créditos: menor e maior, mais intermediários se houver
+      const creditos = [];
+      if (creditoMenor > 0) creditos.push(Math.round(creditoMenor));
+      if (creditoMaior > 0 && creditoMaior !== creditoMenor) creditos.push(Math.round(creditoMaior));
+      // Check for additional credit columns in the wide area (some sheets have them)
+      // For now, also check if there are multiple credit entries per group in the Crédito column area
+
+      if (creditos.length === 0) continue;
+      creditos.sort((a, b) => a - b);
+
+      // Extract lance data from repeating monthly blocks (col 13+)
+      // Each block: QT Sorteio, QT L. Fixo/Lance, QT L. Livre/Ofertantes, Max, Min
+      const sorteios = [];
+      const lancesMax = [];
+      const lancesMin = [];
+      let col = 13;
+      while (col < r.length - 2) {
+        const qtSort = Number(r[col]);
+        if (!isNaN(qtSort) && qtSort > 0) sorteios.push(qtSort);
+        // Max lance: could be col+4 or col+3 depending on block format
+        // Find "Max" value — it's a percentage
+        for (let offset = 1; offset <= 5 && col + offset < r.length; offset++) {
+          const val = r[col + offset];
+          if (val != null) {
+            const num = typeof val === "string" ? parseFloat(val.replace("%", "")) / 100 : Number(val);
+            if (num > 0 && num < 1) {
+              lancesMax.push(num);
+              break;
+            }
+          }
+        }
+        col += 6; // Skip to next block
+      }
+
+      const contemp = sorteios.length > 0
+        ? Math.round(sorteios.reduce((a, b) => a + b, 0) / sorteios.length)
+        : null;
+      const lanceMedio = lancesMax.length > 0
+        ? +(lancesMax.reduce((a, b) => a + b, 0) / lancesMax.length * 100).toFixed(2)
+        : null;
+
+      const embutidoMax = tipo === "veiculo" ? 30 : tipo === "pesado" ? 30 : 50;
+
+      grupos.push({
+        id: grupoId,
+        adm: "CNP Caixa",
+        cor: "#005CA9",
+        tipo,
+        taxa: +(taxaAdm * 100).toFixed(1),
+        fr: +(fr * 100).toFixed(1),
+        prazo,
+        venc,
+        partic,
+        parcela: null,
+        lanceMedio,
+        contemp,
+        creditos,
+        embutidoMax,
+      });
+    }
+  }
+  return grupos;
+}
+
 function mergeGrupos(base, novos) {
   const map = new Map(base.map(g => [g.id, g]));
   let added = 0, updated = 0;
@@ -456,9 +549,9 @@ function calcular(credito, taxa, prazo, embutidoPct, bolsoPct, preset) {
 
   // Status baseado na simulação
   let status, statusCor;
-  if (mc.probabilidade >= 0.95) { status = "CÓDIGO 31"; statusCor = "#10B981"; }
-  else if (mc.probabilidade >= 0.80) { status = "ALTA CHANCE"; statusCor = "#22C55E"; }
-  else if (mc.probabilidade >= 0.50) { status = "CHANCE MÉDIA"; statusCor = "#D4A017"; }
+  if (mc.probabilidade >= 0.95) { status = "CÓDIGO 31"; statusCor = "#D4781E"; }
+  else if (mc.probabilidade >= 0.80) { status = "ALTA CHANCE"; statusCor = "#E8943A"; }
+  else if (mc.probabilidade >= 0.50) { status = "CHANCE MÉDIA"; statusCor = "#D4781E"; }
   else if (mc.probabilidade >= 0.25) { status = "CHANCE BAIXA"; statusCor = "#F59E0B"; }
   else { status = "MUITO BAIXA"; statusCor = "#EF4444"; }
 
@@ -516,7 +609,7 @@ const Histograma = ({dist, maxMeses=60}) => {
     <div style={{ display:"flex", alignItems:"flex-end", gap:1, height:50, marginTop:8 }}>
       {bars.map(b => (
         <div key={b.mes} style={{ flex:1, minWidth:2, display:"flex", flexDirection:"column", alignItems:"center" }}>
-          <div style={{ width:"100%", height: b.val > 0 ? Math.max(2, (b.val/max)*48) : 0, background: b.mes <= 12 ? "#10B981" : b.mes <= 24 ? "#D4A017" : "#F59E0B", borderRadius:"2px 2px 0 0", transition:"height 0.3s" }}/>
+          <div style={{ width:"100%", height: b.val > 0 ? Math.max(2, (b.val/max)*48) : 0, background: b.mes <= 12 ? "#D4781E" : b.mes <= 24 ? "#E8943A" : "#F5B06B", borderRadius:"2px 2px 0 0", transition:"height 0.3s" }}/>
         </div>
       ))}
     </div>
@@ -554,7 +647,23 @@ export default function App() {
       const nome = file.name.toLowerCase();
       let log = [];
 
-      if (nome.includes("cnp") || nome.includes("caixa")) {
+      // Detectar "LANCES CNP" (sheets: CNP-Imóvel, CNP-Automóvel, CNP-Pesados)
+      const isLancesCNP = sheets.some(s => s.startsWith("CNP-"));
+
+      if (isLancesCNP) {
+        const novos = parseLancesCNP(wb);
+        if (novos.length > 0) {
+          setGruposImportados(prev => {
+            const { grupos, added, updated } = mergeGrupos(prev, novos);
+            log.push(`Lances CNP: ${novos.length} grupos extraídos (${added} novos, ${updated} atualizados) — Sheets: ${sheets.filter(s => s.startsWith("CNP-")).join(", ")}`);
+            setImportLog(prev => [...prev, ...log]);
+            return grupos;
+          });
+        } else {
+          log.push(`Lances CNP: nenhum grupo encontrado. Sheets: ${sheets.join(", ")}`);
+          setImportLog(prev => [...prev, ...log]);
+        }
+      } else if (nome.includes("cnp") || nome.includes("caixa")) {
         const novos = parseCNP(wb);
         if (novos.length > 0) {
           setGruposImportados(prev => {
@@ -596,7 +705,15 @@ export default function App() {
         });
       } else {
         // Tentar detectar automaticamente
-        if (sheets.includes("Grupos") || sheets.includes("Planilha2")) {
+        if (sheets.some(s => s.startsWith("CNP-"))) {
+          const novos = parseLancesCNP(wb);
+          setGruposImportados(prev => {
+            const { grupos, added, updated } = mergeGrupos(prev, novos);
+            log.push(`Auto-detectado Lances CNP: ${novos.length} grupos (${added} novos, ${updated} atualizados)`);
+            setImportLog(prev => [...prev, ...log]);
+            return grupos;
+          });
+        } else if (sheets.includes("Grupos") || sheets.includes("Planilha2")) {
           const novos = parseCNP(wb);
           setGruposImportados(prev => {
             const { grupos, added, updated } = mergeGrupos(prev, novos);
@@ -647,9 +764,9 @@ export default function App() {
     if (modo === "smart" && calculado && p) {
       const c = creditoSmart;
       return [
-        { nome:"🎯 Só Embutido", desc:"Dobra carta. Zero do bolso.", tag:"SEM ENTRADA", tagCor:"#10B981",
+        { nome:"🎯 Só Embutido", desc:"Dobra carta. Zero do bolso.", tag:"SEM ENTRADA", tagCor:"#D4781E",
           ...calcular(c/(1-p.embutidoMax), p.taxa, p.prazo, p.embutidoMax, 0, p) },
-        { nome:"💰 Embutido + 20%", desc:"Entrada de 20% do bolso.", tag:"COM ENTRADA", tagCor:"#D4A017",
+        { nome:"💰 Embutido + 20%", desc:"Entrada de 20% do bolso.", tag:"COM ENTRADA", tagCor:"#D4781E",
           ...calcular(c/(1-p.embutidoMax), p.taxa, p.prazo, p.embutidoMax, 0.20, p) },
         { nome:"⏳ Parcela ½ + Fidelidade", desc:"Carta exata. Sem lance.", tag:"ZERO CUSTO", tagCor:"#8B5CF6",
           ...calcular(c, p.taxa, p.prazo, 0, 0, p) },
@@ -659,22 +776,22 @@ export default function App() {
   }, [modo, calculado, creditoSmart, preset, p]);
 
   const card = (a, bCor) => ({
-    background: a ? "linear-gradient(135deg,#0B3024,#0D3D2F)" : "rgba(255,255,255,0.015)",
-    border: bCor ? `1.5px solid ${bCor}33` : a ? "1.5px solid rgba(16,185,129,0.25)" : "1px solid rgba(255,255,255,0.04)",
+    background: a ? "linear-gradient(135deg,#1A1008,#231710)" : "rgba(255,255,255,0.015)",
+    border: bCor ? `1.5px solid ${bCor}33` : a ? "1.5px solid rgba(212,120,30,0.25)" : "1px solid rgba(255,255,255,0.04)",
     borderRadius:12, padding:16, marginBottom:10,
   });
 
   const ResultBlock = ({r, title}) => (
     <div>
       {/* TAXA EFETIVA */}
-      <div style={{ background:"linear-gradient(135deg,#0B3024,#0E4538)", borderRadius:14, padding:20, marginBottom:14, border:"1px solid rgba(16,185,129,0.2)" }}>
+      <div style={{ background:"linear-gradient(135deg,#1A1008,#2A1C10)", borderRadius:14, padding:20, marginBottom:14, border:"1px solid rgba(212,120,30,0.2)" }}>
         <div style={{ textAlign:"center", marginBottom:14 }}>
           <div style={{ fontSize:10, color:"rgba(255,255,255,0.4)", fontWeight:700, textTransform:"uppercase", letterSpacing:1 }}>Custo Efetivo Real</div>
-          <div style={{ fontSize:40, fontWeight:900, color:"#D4A017", fontFamily:"'JetBrains Mono',monospace", lineHeight:1.1 }}>{pc(r.taxaAA)} <span style={{ fontSize:14, color:"rgba(212,160,23,0.5)" }}>a.a.</span></div>
+          <div style={{ fontSize:40, fontWeight:900, color:"#D4781E", fontFamily:"'JetBrains Mono',monospace", lineHeight:1.1 }}>{pc(r.taxaAA)} <span style={{ fontSize:14, color:"rgba(212,120,30,0.5)" }}>a.a.</span></div>
           <div style={{ fontSize:12, color:"rgba(255,255,255,0.5)" }}>{pc(r.taxaAM)} a.m. • Juros simples sobre {f(r.credEmp)}</div>
         </div>
         <div style={{ display:"flex", justifyContent:"space-around", flexWrap:"wrap", gap:8 }}>
-          {[["Emprestado",f(r.credEmp),"#10B981"],["Juros",f(r.juros),"#EF4444"],["Parcela",f2(r.parcela)+"/mês","#fff"]].map(([k,v,c],i)=>(
+          {[["Emprestado",f(r.credEmp),"#D4781E"],["Juros",f(r.juros),"#EF4444"],["Parcela",f2(r.parcela)+"/mês","#fff"]].map(([k,v,c],i)=>(
             <div key={i} style={{ textAlign:"center" }}><div style={{ fontSize:8, color:"rgba(255,255,255,0.3)" }}>{k}</div><div style={{ fontSize:16, fontWeight:800, color:c, fontFamily:"'JetBrains Mono',monospace" }}>{v}</div></div>
           ))}
         </div>
@@ -748,9 +865,9 @@ export default function App() {
           const lanceTotalPct = (g.embutidoMax / 100 + r.bolsoPct) * 100;
           const mc = monteCarlo({ participantes: g.partic || 2000, parcelaMensal: parcelaGrupo, creditoGrupo: credMaisProx, lancePctCliente: lanceTotalPct, prazo: g.prazo, numSimulacoes: 500, maxMeses: 48 });
           let status, statusCor;
-          if (mc.probabilidade >= 0.95) { status = "CÓDIGO 31"; statusCor = "#10B981"; }
-          else if (mc.probabilidade >= 0.80) { status = "ALTA CHANCE"; statusCor = "#22C55E"; }
-          else if (mc.probabilidade >= 0.50) { status = "CHANCE MÉDIA"; statusCor = "#D4A017"; }
+          if (mc.probabilidade >= 0.95) { status = "CÓDIGO 31"; statusCor = "#D4781E"; }
+          else if (mc.probabilidade >= 0.80) { status = "ALTA CHANCE"; statusCor = "#E8943A"; }
+          else if (mc.probabilidade >= 0.50) { status = "CHANCE MÉDIA"; statusCor = "#D4781E"; }
           else if (mc.probabilidade >= 0.25) { status = "CHANCE BAIXA"; statusCor = "#F59E0B"; }
           else { status = "MUITO BAIXA"; statusCor = "#EF4444"; }
           return { g, credMaisProx, parcelaGrupo, saldoDev, lanceEmb, lanceBolso, novoSaldo, credLib, credEmp, juros, taxaEf, taxaAM, taxaAA, parcela, lanceTotalPct, mc, status, statusCor };
@@ -761,8 +878,8 @@ export default function App() {
             <div style={{ fontSize:9, color:"#4B5563", marginBottom:12 }}>Cada grupo simulado com Monte Carlo • Fórmula de custo efetivo aplicada</div>
             {hipoteses.map((h, hi) => (
               <details key={hi} style={{ marginBottom:8 }}>
-                <summary style={{ background: hi === 0 ? "linear-gradient(135deg,rgba(16,185,129,0.06),rgba(16,185,129,0.02))" : "rgba(255,255,255,0.02)", border: hi === 0 ? `1.5px solid ${h.statusCor}33` : "1px solid rgba(255,255,255,0.04)", borderLeft: `3px solid ${h.g.cor}`, borderRadius: 10, padding: 12, cursor:"pointer", listStyle:"none", position:"relative" }}>
-                  {hi === 0 && <div style={{ position:"absolute", top:-7, right:110, background:"linear-gradient(135deg,#D4A017,#8B6914)", color:"#fff", fontSize:7, fontWeight:800, padding:"2px 8px", borderRadius:3 }}>MELHOR OPÇÃO</div>}
+                <summary style={{ background: hi === 0 ? "linear-gradient(135deg,rgba(212,120,30,0.06),rgba(212,120,30,0.02))" : "rgba(255,255,255,0.02)", border: hi === 0 ? `1.5px solid ${h.statusCor}33` : "1px solid rgba(255,255,255,0.04)", borderLeft: `3px solid ${h.g.cor}`, borderRadius: 10, padding: 12, cursor:"pointer", listStyle:"none", position:"relative" }}>
+                  {hi === 0 && <div style={{ position:"absolute", top:-7, right:110, background:"linear-gradient(135deg,#D4781E,#A85A15)", color:"#fff", fontSize:7, fontWeight:800, padding:"2px 8px", borderRadius:3 }}>MELHOR OPÇÃO</div>}
                   <div style={{ position:"absolute", top:-7, right:12, background:h.statusCor, color:"#fff", fontSize:7, fontWeight:800, padding:"2px 8px", borderRadius:3 }}>{h.status} {pc1(h.mc.probabilidade)}</div>
                   <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:8 }}>
                     <div style={{ width:7, height:7, borderRadius:"50%", background:h.g.cor }}/>
@@ -771,7 +888,7 @@ export default function App() {
                     <span style={{ fontSize:9, color:"#4B5563", marginLeft:"auto" }}>{h.g.prazo}m • {h.g.taxa}%+{h.g.fr}% • Emb {h.g.embutidoMax}%</span>
                   </div>
                   <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:6 }}>
-                    {[["CARTA",f(h.credMaisProx),"#fff"],["DISPONÍVEL",f(h.credLib),"#10B981"],["EMPRESTADO",f(h.credEmp),"#D4A017"],["PARCELA",f2(h.parcela),"#fff"],["TAXA EF.",pc(h.taxaAA)+" a.a.","#D4A017"],["CONTEMP.",`~${h.mc.mesMedio}m`,h.statusCor]].map(([k,v,c],i) => (
+                    {[["CARTA",f(h.credMaisProx),"#fff"],["DISPONÍVEL",f(h.credLib),"#D4781E"],["EMPRESTADO",f(h.credEmp),"#D4781E"],["PARCELA",f2(h.parcela),"#fff"],["TAXA EF.",pc(h.taxaAA)+" a.a.","#D4781E"],["CONTEMP.",`~${h.mc.mesMedio}m`,h.statusCor]].map(([k,v,c],i) => (
                       <div key={i} style={{ minWidth:70 }}><div style={{ fontSize:7, color:"#4B5563" }}>{k}</div><div style={{ fontSize:12, fontWeight:800, color:c, fontFamily:"'JetBrains Mono',monospace" }}>{v}</div></div>
                     ))}
                   </div>
@@ -789,8 +906,8 @@ export default function App() {
                     <div style={{ marginTop:6 }}><div style={{ fontSize:7, color:"#4B5563", marginBottom:3 }}>Créditos no grupo:</div><div style={{ display:"flex", flexWrap:"wrap", gap:3 }}>{h.g.creditos.map((c,ci)=>(<span key={ci} style={{ fontSize:8, fontWeight:600, padding:"2px 5px", borderRadius:3, background:c===h.credMaisProx?`${h.g.cor}20`:"rgba(255,255,255,0.03)", color:c===h.credMaisProx?h.g.cor:"#6B7280", border:c===h.credMaisProx?`1px solid ${h.g.cor}44`:"1px solid rgba(255,255,255,0.03)", fontFamily:"'JetBrains Mono',monospace" }}>{f(c)}</span>))}</div></div>
                   </div>
                   <div style={{ background:"rgba(255,255,255,0.02)", border:"1px solid rgba(255,255,255,0.04)", borderRadius:8, padding:12, marginBottom:8 }}>
-                    <div style={{ fontSize:9, fontWeight:700, color:"#D4A017", marginBottom:6 }}>CONTA NESTE GRUPO</div>
-                    {[["Crédito (carta)",f(h.credMaisProx),"#fff"],["Saldo devedor",f(h.saldoDev),"#fff"],["Lance embutido",`${f(h.lanceEmb)} (${h.g.embutidoMax}%)`,"#8B5CF6"],["Lance bolso",`${f(h.lanceBolso)} (${pc1(r.bolsoPct)})`,"#F59E0B"],["Lance total",`${h.lanceTotalPct.toFixed(1)}%`,"#fff"],["Novo saldo",f(h.novoSaldo),"#fff"],["Crédito liberado",f(h.credLib),"#10B981"],["Crédito emprestado",f(h.credEmp),"#D4A017"],["Juros",f(h.juros),"#EF4444"],["Taxa efetiva",`${pc(h.taxaAA)} a.a. (${pc(h.taxaAM)} a.m.)`,"#D4A017"],["Parcela",f2(h.parcela),"#fff"]].map(([k,v,c],i)=>(
+                    <div style={{ fontSize:9, fontWeight:700, color:"#D4781E", marginBottom:6 }}>CONTA NESTE GRUPO</div>
+                    {[["Crédito (carta)",f(h.credMaisProx),"#fff"],["Saldo devedor",f(h.saldoDev),"#fff"],["Lance embutido",`${f(h.lanceEmb)} (${h.g.embutidoMax}%)`,"#8B5CF6"],["Lance bolso",`${f(h.lanceBolso)} (${pc1(r.bolsoPct)})`,"#F59E0B"],["Lance total",`${h.lanceTotalPct.toFixed(1)}%`,"#fff"],["Novo saldo",f(h.novoSaldo),"#fff"],["Crédito liberado",f(h.credLib),"#D4781E"],["Crédito emprestado",f(h.credEmp),"#D4781E"],["Juros",f(h.juros),"#EF4444"],["Taxa efetiva",`${pc(h.taxaAA)} a.a. (${pc(h.taxaAM)} a.m.)`,"#D4781E"],["Parcela",f2(h.parcela),"#fff"]].map(([k,v,c],i)=>(
                       <div key={i} style={{ display:"flex", justifyContent:"space-between", padding:"3px 0", borderBottom:"1px solid rgba(255,255,255,0.02)" }}><span style={{ fontSize:9, color:"#6B7280" }}>{k}</span><span style={{ fontSize:10, fontWeight:700, color:c, fontFamily:"'JetBrains Mono',monospace" }}>{v}</span></div>
                     ))}
                   </div>
@@ -816,11 +933,11 @@ export default function App() {
         {[
           ["1","Crédito + Taxa = Saldo Dev", `${f(r.credito)} + ${pc1(r.taxa)}`, f(r.saldoDev),"#fff"],
           ["2","- Emb - Bolso = Novo Saldo", `- ${f(r.lanceEmb)} - ${f(r.lanceBolso)}`, f(r.novoSaldo),"#fff"],
-          ["3","Crédito - Emb = Liberado", `${f(r.credito)} - ${f(r.lanceEmb)}`, f(r.credLib),"#10B981"],
-          ["4","Liberado - Bolso = Emprestado", `${f(r.credLib)} - ${f(r.lanceBolso)}`, f(r.credEmp),"#D4A017"],
+          ["3","Crédito - Emb = Liberado", `${f(r.credito)} - ${f(r.lanceEmb)}`, f(r.credLib),"#D4781E"],
+          ["4","Liberado - Bolso = Emprestado", `${f(r.credLib)} - ${f(r.lanceBolso)}`, f(r.credEmp),"#D4781E"],
           ["5","Novo Saldo - Emp = Juros", `${f(r.novoSaldo)} - ${f(r.credEmp)}`, f(r.juros),"#EF4444"],
-          ["6","Juros ÷ Emp = Taxa Ef.", `${f(r.juros)} ÷ ${f(r.credEmp)}`, pc(r.taxaEf),"#D4A017"],
-          ["7",`÷ ${r.prazo}m × 12 = % a.a.`, `${pc(r.taxaEf)} ÷ ${r.prazo} × 12`, pc(r.taxaAA),"#D4A017"],
+          ["6","Juros ÷ Emp = Taxa Ef.", `${f(r.juros)} ÷ ${f(r.credEmp)}`, pc(r.taxaEf),"#D4781E"],
+          ["7",`÷ ${r.prazo}m × 12 = % a.a.`, `${pc(r.taxaEf)} ÷ ${r.prazo} × 12`, pc(r.taxaAA),"#D4781E"],
         ].map((s,i)=>(
           <div key={i} style={{ display:"flex", alignItems:"center", gap:6, padding:"5px 0", borderBottom:"1px solid rgba(255,255,255,0.03)" }}>
             <div style={{ width:18, height:18, borderRadius:"50%", background:"rgba(255,255,255,0.05)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:8, fontWeight:700, color:"#6B7280", flexShrink:0 }}>{s[0]}</div>
@@ -835,12 +952,12 @@ export default function App() {
         <div style={card(false)}>
           <div style={{ fontSize:10, fontWeight:700, color:"#6B7280", marginBottom:8 }}>VS FINANCIAMENTO ({pc1(r.txFinAa)} a.a. sobre {f(r.credEmp)})</div>
           <div style={{ display:"flex", gap:8 }}>
-            <div style={{ flex:1, background:"rgba(16,185,129,0.05)", borderRadius:8, padding:10 }}>
-              <div style={{ fontSize:8, fontWeight:700, color:"#10B981", marginBottom:4 }}>✓ CONSÓRCIO</div>
+            <div style={{ flex:1, background:"rgba(212,120,30,0.05)", borderRadius:8, padding:10 }}>
+              <div style={{ fontSize:8, fontWeight:700, color:"#D4781E", marginBottom:4 }}>✓ CONSÓRCIO</div>
               <div style={{ fontSize:8, color:"#6B7280" }}>Juros</div>
-              <div style={{ fontSize:16, fontWeight:800, color:"#10B981", fontFamily:"'JetBrains Mono',monospace" }}>{f(r.juros)}</div>
+              <div style={{ fontSize:16, fontWeight:800, color:"#D4781E", fontFamily:"'JetBrains Mono',monospace" }}>{f(r.juros)}</div>
               <div style={{ fontSize:8, color:"#6B7280", marginTop:4 }}>Taxa</div>
-              <div style={{ fontSize:12, fontWeight:700, color:"#D4A017" }}>{pc(r.taxaAA)} a.a.</div>
+              <div style={{ fontSize:12, fontWeight:700, color:"#D4781E" }}>{pc(r.taxaAA)} a.a.</div>
             </div>
             <div style={{ flex:1, background:"rgba(239,68,68,0.04)", borderRadius:8, padding:10 }}>
               <div style={{ fontSize:8, fontWeight:700, color:"#EF4444", marginBottom:4 }}>✗ FINANCIAMENTO</div>
@@ -851,9 +968,9 @@ export default function App() {
             </div>
           </div>
           {r.jurosFin > r.juros && (
-            <div style={{ textAlign:"center", marginTop:8, padding:8, background:"rgba(16,185,129,0.06)", borderRadius:6 }}>
+            <div style={{ textAlign:"center", marginTop:8, padding:8, background:"rgba(212,120,30,0.06)", borderRadius:6 }}>
               <div style={{ fontSize:8, color:"rgba(255,255,255,0.3)" }}>ECONOMIA</div>
-              <div style={{ fontSize:22, fontWeight:900, color:"#D4A017", fontFamily:"'JetBrains Mono',monospace" }}>{f(r.jurosFin - r.juros)}</div>
+              <div style={{ fontSize:22, fontWeight:900, color:"#D4781E", fontFamily:"'JetBrains Mono',monospace" }}>{f(r.jurosFin - r.juros)}</div>
             </div>
           )}
         </div>
@@ -879,18 +996,18 @@ export default function App() {
   );
 
   return (
-    <div style={{ minHeight:"100vh", background:"#060910", fontFamily:"'DM Sans',system-ui,sans-serif", color:"#C9CDD4" }}>
+    <div style={{ minHeight:"100vh", background:"#0A0A0A", fontFamily:"'DM Sans',system-ui,sans-serif", color:"#C9CDD4" }}>
       <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700;800&display=swap" rel="stylesheet"/>
 
-      <div style={{ background:"linear-gradient(160deg,#0B3024,#071810 70%,#060910)", padding:"18px 16px 14px", borderBottom:"1px solid rgba(212,160,23,0.1)" }}>
+      <div style={{ background:"linear-gradient(160deg,#1A1008,#120C06 70%,#0A0A0A)", padding:"18px 16px 14px", borderBottom:"1px solid rgba(212,120,30,0.1)" }}>
         <div style={{ maxWidth:860, margin:"0 auto", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-          <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-            <div style={{ width:28, height:28, borderRadius:6, background:"linear-gradient(135deg,#D4A017,#8B6914)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, fontWeight:900, color:"#fff" }}>Y</div>
-            <div><div style={{ fontSize:14, fontWeight:800, color:"#fff" }}>Calculadora C31</div><div style={{ fontSize:8, color:"rgba(255,255,255,0.3)" }}>Monte Carlo • Juros Simples • Dados Reais</div></div>
+          <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+            <img src="/logo-branco.png" alt="Código 31" style={{ height:32 }}/>
+            <div style={{ fontSize:8, color:"rgba(255,255,255,0.3)", letterSpacing:1, textTransform:"uppercase" }}>Calculadora Monte Carlo</div>
           </div>
           <div style={{ display:"flex", gap:6, alignItems:"center" }}>
-            {gruposImportados.length > 0 && <span style={{ fontSize:8, color:"#10B981", fontWeight:700, background:"rgba(16,185,129,0.1)", padding:"2px 6px", borderRadius:4 }}>{GRUPOS_ATIVOS.length} grupos</span>}
-            <button onClick={()=>setShowImport(v=>!v)} style={{ padding:"4px 10px", borderRadius:5, border:`1px solid ${showImport?"rgba(16,185,129,0.3)":"rgba(255,255,255,0.06)"}`, background:showImport?"rgba(16,185,129,0.08)":"transparent", color:showImport?"#10B981":"#6B7280", fontSize:9, cursor:"pointer", fontFamily:"inherit", fontWeight:600 }}>Importar Planilhas</button>
+            {gruposImportados.length > 0 && <span style={{ fontSize:8, color:"#D4781E", fontWeight:700, background:"rgba(212,120,30,0.1)", padding:"2px 6px", borderRadius:4 }}>{GRUPOS_ATIVOS.length} grupos</span>}
+            <button onClick={()=>setShowImport(v=>!v)} style={{ padding:"4px 10px", borderRadius:5, border:`1px solid ${showImport?"rgba(212,120,30,0.3)":"rgba(255,255,255,0.06)"}`, background:showImport?"rgba(212,120,30,0.08)":"transparent", color:showImport?"#D4781E":"#6B7280", fontSize:9, cursor:"pointer", fontFamily:"inherit", fontWeight:600 }}>Importar Planilhas</button>
             {modo && <button onClick={()=>{setModo(null);setCalculado(false);}} style={{ padding:"4px 10px", borderRadius:5, border:"1px solid rgba(255,255,255,0.06)", background:"transparent", color:"#6B7280", fontSize:9, cursor:"pointer", fontFamily:"inherit" }}>← Início</button>}
           </div>
         </div>
@@ -903,11 +1020,11 @@ export default function App() {
             <div style={{ fontSize:12, fontWeight:700, color:"#fff", marginBottom:10 }}>Importar Planilhas</div>
             <div style={{ fontSize:10, color:"#6B7280", marginBottom:12, lineHeight:1.6 }}>
               Suba planilhas .xlsx para atualizar os dados dos grupos. O sistema detecta automaticamente o tipo:<br/>
-              <span style={{ color:"#005CA9", fontWeight:600 }}>CNP Caixa</span> (nome com "CNP" ou "Caixa") • <span style={{ color:"#EC0000", fontWeight:600 }}>Santander</span> (nome com "Santander") • <span style={{ color:"#D4A017", fontWeight:600 }}>Lances/Sorteios</span> (nome com "Lance" ou "Tabela")
+              <span style={{ color:"#005CA9", fontWeight:600 }}>CNP Caixa</span> (nome com "CNP" ou "Caixa") • <span style={{ color:"#EC0000", fontWeight:600 }}>Santander</span> (nome com "Santander") • <span style={{ color:"#D4781E", fontWeight:600 }}>Lances/Sorteios</span> (nome com "Lance" ou "Tabela")
             </div>
 
             <div
-              onDragOver={e => { e.preventDefault(); e.currentTarget.style.borderColor = "rgba(16,185,129,0.5)"; }}
+              onDragOver={e => { e.preventDefault(); e.currentTarget.style.borderColor = "rgba(212,120,30,0.5)"; }}
               onDragLeave={e => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)"; }}
               onDrop={e => { e.preventDefault(); e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)"; for (const f of e.dataTransfer.files) { if (f.name.endsWith(".xlsx") || f.name.endsWith(".xls")) handleImport(f); } }}
               onClick={() => fileRef.current?.click()}
@@ -923,7 +1040,7 @@ export default function App() {
             {importLog.length > 0 && (
               <div style={{ marginTop:12, maxHeight:120, overflowY:"auto" }}>
                 {importLog.map((log, i) => (
-                  <div key={i} style={{ fontSize:9, color: log.startsWith("ERRO") ? "#EF4444" : "#10B981", padding:"3px 0", borderBottom:"1px solid rgba(255,255,255,0.02)", fontFamily:"'JetBrains Mono',monospace" }}>
+                  <div key={i} style={{ fontSize:9, color: log.startsWith("ERRO") ? "#EF4444" : "#D4781E", padding:"3px 0", borderBottom:"1px solid rgba(255,255,255,0.02)", fontFamily:"'JetBrains Mono',monospace" }}>
                     {log}
                   </div>
                 ))}
@@ -953,7 +1070,7 @@ export default function App() {
             <h2 style={{ fontSize:20, fontWeight:800, color:"#fff", marginBottom:4, textAlign:"center" }}>Como quer calcular?</h2>
             <p style={{ fontSize:12, color:"#6B7280", textAlign:"center", marginBottom:20 }}>Simulação Código 31 com Monte Carlo</p>
             <div style={{ display:"flex", gap:12 }}>
-              {[["manual","🔧","Manual","Preenche tudo: crédito, taxa, prazo, lances","#D4A017"],["smart","⚡","Inteligente","Só crédito + tipo. Sistema calcula 3 estratégias.","#10B981"]].map(([k,ico,tit,desc,cor])=>(
+              {[["manual","🔧","Manual","Preenche tudo: crédito, taxa, prazo, lances","#D4781E"],["smart","⚡","Inteligente","Só crédito + tipo. Sistema calcula 3 estratégias.","#D4781E"]].map(([k,ico,tit,desc,cor])=>(
                 <div key={k} onClick={()=>setModo(k)} style={{ flex:1, ...card(false,cor), cursor:"pointer", textAlign:"center", padding:24 }}>
                   <div style={{ fontSize:32, marginBottom:8 }}>{ico}</div>
                   <div style={{ fontSize:16, fontWeight:800, color:"#fff", marginBottom:4 }}>{tit}</div>
@@ -968,9 +1085,9 @@ export default function App() {
         {modo==="manual" && !calculado && (
           <div>
             <h2 style={{ fontSize:18, fontWeight:800, color:"#fff", marginBottom:14 }}>🔧 Modo Manual</h2>
-            <Field label="Crédito bruto" sub="carta" value={credito} onChange={setCredito} min={10000} max={5000000} step={10000} cor="#10B981" suffix="R$"/>
+            <Field label="Crédito bruto" sub="carta" value={credito} onChange={setCredito} min={10000} max={5000000} step={10000} cor="#D4781E" suffix="R$"/>
             <div style={{ display:"flex", gap:10 }}>
-              <div style={{ flex:1 }}><Field label="Taxa" sub="admin+FR" value={taxa} onChange={setTaxa} min={5} max={40} step={0.5} suffix="%" cor="#D4A017"/></div>
+              <div style={{ flex:1 }}><Field label="Taxa" sub="admin+FR" value={taxa} onChange={setTaxa} min={5} max={40} step={0.5} suffix="%" cor="#D4781E"/></div>
               <div style={{ flex:1 }}><Field label="Prazo" value={prazo} onChange={setPrazo} min={20} max={240} step={1} suffix="meses"/></div>
             </div>
             <div style={{ display:"flex", gap:10 }}>
@@ -978,11 +1095,11 @@ export default function App() {
               <div style={{ flex:1 }}><Field label="Lance bolso" value={bolso} onChange={setBolso} min={0} max={50} step={1} suffix="%" cor="#F59E0B"/></div>
             </div>
             <div style={{ background:"rgba(255,255,255,0.02)", borderRadius:10, padding:12, marginBottom:12, display:"flex", justifyContent:"space-around" }}>
-              <div style={{ textAlign:"center" }}><div style={{ fontSize:7, color:"#4B5563" }}>LIBERADO</div><div style={{ fontSize:14, fontWeight:800, color:"#10B981", fontFamily:"'JetBrains Mono',monospace" }}>{f(credito*(1-embutido/100))}</div></div>
-              <div style={{ textAlign:"center" }}><div style={{ fontSize:7, color:"#4B5563" }}>EMPRESTADO</div><div style={{ fontSize:14, fontWeight:800, color:"#D4A017", fontFamily:"'JetBrains Mono',monospace" }}>{f(Math.max(0,credito*(1-embutido/100)-credito*bolso/100))}</div></div>
+              <div style={{ textAlign:"center" }}><div style={{ fontSize:7, color:"#4B5563" }}>LIBERADO</div><div style={{ fontSize:14, fontWeight:800, color:"#D4781E", fontFamily:"'JetBrains Mono',monospace" }}>{f(credito*(1-embutido/100))}</div></div>
+              <div style={{ textAlign:"center" }}><div style={{ fontSize:7, color:"#4B5563" }}>EMPRESTADO</div><div style={{ fontSize:14, fontWeight:800, color:"#D4781E", fontFamily:"'JetBrains Mono',monospace" }}>{f(Math.max(0,credito*(1-embutido/100)-credito*bolso/100))}</div></div>
               <div style={{ textAlign:"center" }}><div style={{ fontSize:7, color:"#4B5563" }}>LANCE TOTAL</div><div style={{ fontSize:14, fontWeight:800, color:"#8B5CF6", fontFamily:"'JetBrains Mono',monospace" }}>{embutido+bolso}%</div></div>
             </div>
-            <button onClick={()=>setCalculado(true)} style={{ width:"100%", padding:"14px", borderRadius:10, border:"none", background:"linear-gradient(135deg,#0D4F3C,#1A7A5C)", color:"#fff", fontSize:14, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+            <button onClick={()=>setCalculado(true)} style={{ width:"100%", padding:"14px", borderRadius:10, border:"none", background:"linear-gradient(135deg,#D4781E,#A85A15)", color:"#fff", fontSize:14, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
               Calcular com Monte Carlo →
             </button>
           </div>
@@ -995,7 +1112,7 @@ export default function App() {
               <button onClick={()=>setCalculado(false)} style={{ padding:"4px 10px", borderRadius:5, border:"1px solid rgba(255,255,255,0.06)", background:"transparent", color:"#6B7280", fontSize:9, cursor:"pointer", fontFamily:"inherit" }}>← Editar</button>
             </div>
             <ResultBlock r={resultado} />
-            <button onClick={()=>window.print()} style={{ width:"100%", padding:"12px", borderRadius:8, border:"none", background:"linear-gradient(135deg,#D4A017,#8B6914)", color:"#fff", fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"inherit", marginTop:8 }}>Imprimir / PDF</button>
+            <button onClick={()=>window.print()} style={{ width:"100%", padding:"12px", borderRadius:8, border:"none", background:"linear-gradient(135deg,#D4781E,#A85A15)", color:"#fff", fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"inherit", marginTop:8 }}>Imprimir / PDF</button>
           </div>
         )}
 
@@ -1006,15 +1123,15 @@ export default function App() {
             <div style={{ fontSize:10, fontWeight:700, color:"#6B7280", marginBottom:8 }}>TIPO / ADMINISTRADORA</div>
             <div style={{ display:"flex", flexWrap:"wrap", gap:6, marginBottom:16 }}>
               {Object.entries(PRESETS).map(([k,v])=>(
-                <button key={k} onClick={()=>setPreset(k)} style={{ padding:"8px 14px", borderRadius:7, border:preset===k?"1.5px solid #10B981":"1px solid rgba(255,255,255,0.05)", background:preset===k?"rgba(16,185,129,0.08)":"transparent", color:preset===k?"#10B981":"#6B7280", fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>{v.label}</button>
+                <button key={k} onClick={()=>setPreset(k)} style={{ padding:"8px 14px", borderRadius:7, border:preset===k?"1.5px solid #D4781E":"1px solid rgba(255,255,255,0.05)", background:preset===k?"rgba(212,120,30,0.08)":"transparent", color:preset===k?"#D4781E":"#6B7280", fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>{v.label}</button>
               ))}
             </div>
-            <Field label="Crédito desejado" sub="no bolso" value={creditoSmart} onChange={setCreditoSmart} min={30000} max={2000000} step={10000} cor="#10B981" suffix="R$"/>
-            <input type="range" min={30000} max={1500000} step={10000} value={creditoSmart} onChange={e=>setCreditoSmart(Number(e.target.value))} style={{ width:"100%", accentColor:"#10B981", marginTop:-8, marginBottom:12 }}/>
+            <Field label="Crédito desejado" sub="no bolso" value={creditoSmart} onChange={setCreditoSmart} min={30000} max={2000000} step={10000} cor="#D4781E" suffix="R$"/>
+            <input type="range" min={30000} max={1500000} step={10000} value={creditoSmart} onChange={e=>setCreditoSmart(Number(e.target.value))} style={{ width:"100%", accentColor:"#D4781E", marginTop:-8, marginBottom:12 }}/>
             <div style={{ background:"rgba(255,255,255,0.02)", borderRadius:8, padding:10, marginBottom:12, fontSize:10, color:"#4B5563" }}>
               {p.label} • Taxa: {pc1(p.taxa)} • Prazo: {p.prazo}m • Embutido: {pc1(p.embutidoMax)} • {p.participantes} participantes • {p.contemp} contemp/mês
             </div>
-            <button onClick={()=>setCalculado(true)} style={{ width:"100%", padding:"14px", borderRadius:10, border:"none", background:"linear-gradient(135deg,#0D4F3C,#1A7A5C)", color:"#fff", fontSize:14, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+            <button onClick={()=>setCalculado(true)} style={{ width:"100%", padding:"14px", borderRadius:10, border:"none", background:"linear-gradient(135deg,#D4781E,#A85A15)", color:"#fff", fontSize:14, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
               Simular 3 Estratégias (Monte Carlo) →
             </button>
           </div>
@@ -1035,7 +1152,7 @@ export default function App() {
                   <div style={{ fontSize:14, fontWeight:800, color:"#fff", marginBottom:4 }}>{e.nome}</div>
                   <div style={{ fontSize:10, color:"#6B7280", marginBottom:8 }}>{e.desc}</div>
                   <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
-                    {[["CARTA",f(e.credito),"#fff"],["DISPONÍVEL",f(e.credLib),"#10B981"],["EMPRESTADO",f(e.credEmp),"#D4A017"],["TAXA",pc(e.taxaAA)+" a.a.","#D4A017"],["PARCELA",f2(e.parcela),"#fff"],["CONTEMP.",`~${e.mc.mesMedio}m`,e.statusCor]].map(([k,v,c],j)=>(
+                    {[["CARTA",f(e.credito),"#fff"],["DISPONÍVEL",f(e.credLib),"#D4781E"],["EMPRESTADO",f(e.credEmp),"#D4781E"],["TAXA",pc(e.taxaAA)+" a.a.","#D4781E"],["PARCELA",f2(e.parcela),"#fff"],["CONTEMP.",`~${e.mc.mesMedio}m`,e.statusCor]].map(([k,v,c],j)=>(
                       <div key={j}><div style={{ fontSize:7, color:"#4B5563" }}>{k}</div><div style={{ fontSize:13, fontWeight:800, color:c, fontFamily:"'JetBrains Mono',monospace" }}>{v}</div></div>
                     ))}
                   </div>
@@ -1044,13 +1161,14 @@ export default function App() {
                 <div style={{ padding:"0 4px", marginTop:-4 }}><ResultBlock r={e} /></div>
               </details>
             ))}
-            <button onClick={()=>window.print()} style={{ width:"100%", padding:"12px", borderRadius:8, border:"none", background:"linear-gradient(135deg,#D4A017,#8B6914)", color:"#fff", fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"inherit", marginTop:8 }}>Imprimir / PDF</button>
+            <button onClick={()=>window.print()} style={{ width:"100%", padding:"12px", borderRadius:8, border:"none", background:"linear-gradient(135deg,#D4781E,#A85A15)", color:"#fff", fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"inherit", marginTop:8 }}>Imprimir / PDF</button>
           </div>
         )}
       </div>
 
-      <div style={{ textAlign:"center", padding:"20px 16px", fontSize:8, color:"#1F2937", borderTop:"1px solid rgba(255,255,255,0.02)", marginTop:30 }}>
-        YES Consórcios • Calculadora C31 • Monte Carlo • Juros Simples • Dados Reais CNP Caixa e Santander • {new Date().getFullYear()}
+      <div style={{ textAlign:"center", padding:"24px 16px", borderTop:"1px solid rgba(255,255,255,0.03)", marginTop:30 }}>
+        <img src="/logo-branco.png" alt="Código 31" style={{ height:20, opacity:0.3, marginBottom:6 }}/>
+        <div style={{ fontSize:8, color:"#1F2937", letterSpacing:1 }}>SIMULAÇÃO MONTE CARLO • JUROS SIMPLES • DADOS REAIS CNP CAIXA E SANTANDER • {new Date().getFullYear()}</div>
       </div>
     </div>
   );
