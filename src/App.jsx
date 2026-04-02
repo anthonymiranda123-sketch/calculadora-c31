@@ -1028,11 +1028,12 @@ export default function App() {
     <div style={{ minHeight:"100vh", background:"#0A0A0A", fontFamily:"'DM Sans',system-ui,sans-serif", color:"#C9CDD4" }}>
       <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700;800&display=swap" rel="stylesheet"/>
 
-      <div style={{ background:"linear-gradient(160deg,#1A1008,#120C06 70%,#0A0A0A)", padding:"18px 16px 14px", borderBottom:"1px solid rgba(212,120,30,0.1)" }}>
+      <div style={{ background:"linear-gradient(160deg,#1A1008,#120C06 70%,#0A0A0A)", padding:"14px 16px", borderBottom:"1px solid rgba(212,120,30,0.1)" }}>
         <div style={{ maxWidth:860, margin:"0 auto", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-          <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-            <img src="/logo-branco.png" alt="Código 31" style={{ height:32 }}/>
-            <div style={{ fontSize:8, color:"rgba(255,255,255,0.3)", letterSpacing:1, textTransform:"uppercase" }}>Calculadora Monte Carlo</div>
+          <div style={{ display:"flex", alignItems:"center", gap:14 }}>
+            <img src="/gm-icon.png" alt="Grupo Mirandas" style={{ height:36, borderRadius:6, opacity:0.9 }}/>
+            <div style={{ width:1, height:28, background:"rgba(255,255,255,0.08)" }}/>
+            <img src="/logo-branco.png" alt="Código 31" style={{ height:24 }}/>
           </div>
           <div style={{ display:"flex", gap:6, alignItems:"center" }}>
             {gruposImportados.length > 0 && <span style={{ fontSize:8, color:"#D4781E", fontWeight:700, background:"rgba(212,120,30,0.1)", padding:"2px 6px", borderRadius:4 }}>{GRUPOS_ATIVOS.length} grupos</span>}
@@ -1538,9 +1539,17 @@ export default function App() {
 
       </div>
 
-      <div style={{ textAlign:"center", padding:"24px 16px", borderTop:"1px solid rgba(255,255,255,0.03)", marginTop:30 }}>
-        <img src="/logo-branco.png" alt="Código 31" style={{ height:20, opacity:0.3, marginBottom:6 }}/>
-        <div style={{ fontSize:8, color:"#1F2937", letterSpacing:1 }}>SIMULAÇÃO MONTE CARLO • JUROS SIMPLES • DADOS REAIS CNP CAIXA E SANTANDER • {new Date().getFullYear()}</div>
+      <div style={{ borderTop:"1px solid rgba(255,255,255,0.04)", marginTop:30, padding:"28px 16px 20px" }}>
+        <div style={{ maxWidth:860, margin:"0 auto", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+          <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+            <img src="/gm-logo-texto.png" alt="Grupo Mirandas" style={{ height:32, opacity:0.6 }}/>
+            <div style={{ width:1, height:20, background:"rgba(255,255,255,0.06)" }}/>
+            <img src="/logo-branco.png" alt="Código 31" style={{ height:16, opacity:0.35 }}/>
+          </div>
+          <div style={{ fontSize:8, color:"#2A2A2A", letterSpacing:0.8, textAlign:"right", lineHeight:1.6 }}>
+            MONTE CARLO • JUROS SIMPLES<br/>DADOS REAIS CNP CAIXA E SANTANDER • {new Date().getFullYear()}
+          </div>
+        </div>
       </div>
     </div>
   );
