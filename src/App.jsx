@@ -1,24 +1,43 @@
 import { useState, useMemo, useCallback, useRef } from "react";
 import * as XLSX from "xlsx";
+import {
+  GRUPOS as GRUPOS_DADOS, META_DADOS, monteCarloReal, poolCategoria,
+  classificaStatus, probTexto,
+} from "./motor";
 
 // ═══════════════════════════════════════════════════════════
 // PRESETS POR CATEGORIA
 // ═══════════════════════════════════════════════════════════
 const PRESETS = {
-  imovel_cnp: { label:"Imóvel CNP Caixa", taxa:0.25, prazo:178, embutidoMax:0.50, participantes:3660, creditoRef:154175, contemp:10, lanceMedio:69.80, parcelaRef:1083 },
-  imovel_san: { label:"Imóvel Santander", taxa:0.25, prazo:168, embutidoMax:0.30, participantes:3200, creditoRef:250000, contemp:15, lanceMedio:35, parcelaRef:1860 },
-  veiculo_cnp: { label:"Veículo CNP Caixa", taxa:0.205, prazo:80, embutidoMax:0.30, participantes:800, creditoRef:60000, contemp:5, lanceMedio:15.5, parcelaRef:963 },
-  veiculo_san: { label:"Veículo Santander", taxa:0.215, prazo:70, embutidoMax:0.30, participantes:1000, creditoRef:100000, contemp:8, lanceMedio:29, parcelaRef:1025 },
-  servico: { label:"Serviço/Reforma", taxa:0.25, prazo:100, embutidoMax:0.30, participantes:1200, creditoRef:80000, contemp:8, lanceMedio:25, parcelaRef:800 },
-  pesado: { label:"Pesado/Agro", taxa:0.22, prazo:120, embutidoMax:0.30, participantes:1500, creditoRef:200000, contemp:10, lanceMedio:22, parcelaRef:1200 },
+  imovel_cnp: { label:"Imóvel CNP Caixa", taxa:0.25, prazo:178, embutidoMax:0.50, participantes:3660, creditoRef:154175, contemp:10, lanceMedio:69.80, parcelaRef:1083, tipo:"imovel", adm:"CNP Caixa" },
+  imovel_san: { label:"Imóvel Santander", taxa:0.25, prazo:168, embutidoMax:0.30, participantes:3200, creditoRef:250000, contemp:15, lanceMedio:35, parcelaRef:1860, tipo:"imovel", adm:"Santander" },
+  veiculo_cnp: { label:"Veículo CNP Caixa", taxa:0.205, prazo:80, embutidoMax:0.30, participantes:800, creditoRef:60000, contemp:5, lanceMedio:15.5, parcelaRef:963, tipo:"veiculo", adm:"CNP Caixa" },
+  veiculo_san: { label:"Veículo Santander", taxa:0.215, prazo:70, embutidoMax:0.30, participantes:1000, creditoRef:100000, contemp:8, lanceMedio:29, parcelaRef:1025, tipo:"veiculo", adm:"Santander" },
+  servico: { label:"Serviço/Reforma", taxa:0.25, prazo:100, embutidoMax:0.30, participantes:1200, creditoRef:80000, contemp:8, lanceMedio:25, parcelaRef:800, tipo:"servico", adm:null },
+  pesado: { label:"Pesado/Agro", taxa:0.22, prazo:120, embutidoMax:0.30, participantes:1500, creditoRef:200000, contemp:10, lanceMedio:22, parcelaRef:1200, tipo:"pesado", adm:null },
 };
+
+// Pool de lances reais por categoria — base do Monte Carlo quando o cliente
+// ainda não escolheu grupo. CNP não publica histórico de lance por assembleia:
+// cai no pool de imóvel/veículo geral (Santander) como referência de mercado.
+const POOL_PRESET = Object.fromEntries(
+  Object.entries(PRESETS).map(([k, p]) => {
+    const proprio = poolCategoria(GRUPOS_DADOS, p.tipo, p.adm);
+    if (proprio) return [k, proprio];
+    const geral = poolCategoria(GRUPOS_DADOS, p.tipo, null);
+    return [k, geral && { ...geral, referencia: true, admPedida: p.adm }];
+  })
+);
 
 const SEG = 0.00043 + 0.00055225;
 
 // ═══════════════════════════════════════════════════════════
-// GRUPOS REAIS (extraídos das planilhas CNP e Santander)
+// GRUPOS CURADOS — as faixas de crédito e parcelas conferidas à mão.
+// A base viva são os 400+ grupos de src/data/grupos.json (gerado por
+// scripts/export-grupos.py a partir das planilhas do Drive); estes aqui só
+// completam crédito/parcela/vagas, que a planilha de lances não traz.
 // ═══════════════════════════════════════════════════════════
-const GRUPOS_REAIS = [
+const GRUPOS_CURADOS = [
   // CNP CAIXA - IMÓVEL (Sheet Grupos + Planilha2)
   { id:"_1043", adm:"CNP Caixa", cor:"#005CA9", tipo:"imovel", taxa:20, fr:5, prazo:178, venc:"Dia 10", vagas:6339, total:9999, partic:3660, parcela:1082.77, lanceMedio:69.80, contemp:10, lancesFixos:539, pctFixos:14.73, pctContempFixo:0.19, creditos:[77087,88100,99112,110125,121137,132150,143162,154175], embutidoMax:50 },
   { id:"_1042", adm:"CNP Caixa", cor:"#005CA9", tipo:"imovel", taxa:20, fr:5, prazo:162, venc:"Dia 10", vagas:7343, total:9999, partic:2656, parcela:1443.39, lanceMedio:69.35, contemp:16, lancesFixos:438, pctFixos:16.49, pctContempFixo:0.23, creditos:[187039,199508,211977,224447,236916,249385,261855,274324,286793,299262,311732], embutidoMax:50 },
@@ -42,6 +61,37 @@ const GRUPOS_REAIS = [
   { id:"5011", adm:"Santander", cor:"#EC0000", tipo:"veiculo", taxa:18, fr:3.5, prazo:38, venc:"Dia 10", partic:600, parcela:3197, lanceMedio:29, contemp:5, creditos:[100000,150000,200000,250000,300000], embutidoMax:0 },
   { id:"627", adm:"Santander", cor:"#EC0000", tipo:"veiculo", taxa:17, fr:3.5, prazo:70, venc:"Dia 15", partic:1000, parcela:null, lanceMedio:18, contemp:8, creditos:[130000,150000,180000,200000,250000], embutidoMax:30 },
 ];
+
+const chaveGrupo = g => `${g.adm}|${String(g.id).replace(/^_/, "")}`;
+
+// Base viva: todo grupo das planilhas + o que os curados sabem a mais.
+const GRUPOS_REAIS = (() => {
+  const curados = new Map(GRUPOS_CURADOS.map(g => [chaveGrupo(g), g]));
+  const usados = new Set();
+  const base = GRUPOS_DADOS.map(g => {
+    const c = curados.get(chaveGrupo(g));
+    if (!c) return g;
+    usados.add(chaveGrupo(g));
+    return {
+      ...g,
+      creditos: g.creditos?.length ? g.creditos : c.creditos,
+      parcela: g.parcela ?? c.parcela,
+      venc: g.venc ?? c.venc,
+      vagas: c.vagas,
+      lancesFixos: c.lancesFixos,
+      pctFixos: c.pctFixos,
+      embutidoMax: c.embutidoMax ?? g.embutidoMax,
+      // lance médio real (histórico) tem prioridade sobre o curado
+      lanceMedio: g.lanceMedio ?? c.lanceMedio,
+      contemp: g.contemp ?? c.contemp,
+      partic: g.partic ?? c.partic,
+      prazo: g.prazo ?? c.prazo,
+    };
+  });
+  const soCurados = GRUPOS_CURADOS.filter(g => !usados.has(chaveGrupo(g)))
+    .map(g => ({ ...g, menores: [], meses: 0, lanceCerto: null }));
+  return [...base, ...soCurados];
+})();
 
 // ═══════════════════════════════════════════════════════════
 // PARSERS DE PLANILHAS (CNP, Santander, Lances)
@@ -505,7 +555,7 @@ function monteCarlo(params) {
 // ═══════════════════════════════════════════════════════════
 // MOTOR DE CÁLCULO (FÓRMULA ANTHONY)
 // ═══════════════════════════════════════════════════════════
-function calcular(credito, taxa, prazo, embutidoPct, bolsoPct, preset) {
+function calcular(credito, taxa, prazo, embutidoPct, bolsoPct, preset, pool) {
   const saldoDev = credito * (1 + taxa);
   const lanceEmb = credito * embutidoPct;
   const lanceBolso = credito * bolsoPct;
@@ -526,34 +576,31 @@ function calcular(credito, taxa, prazo, embutidoPct, bolsoPct, preset) {
   const participantes = preset ? preset.participantes : 3000;
   const creditoGrupo = preset ? preset.creditoRef : credito;
 
-  const mc = monteCarlo({
-    participantes,
-    parcelaMensal: parcelaGrupo,
-    creditoGrupo,
-    lancePctCliente: lanceTotalPct,
-    prazo,
-    numSimulacoes: 1000,
-    maxMeses: 60,
+  // Contemplação: bootstrap sobre o histórico real de lances vencedores.
+  // Sem histórico da categoria, cai no modelo sintético (marcado na tela).
+  const simReal = p => {
+    if (!pool) return null;
+    const mc = monteCarloReal({
+      menores: pool.menores,
+      lancePct: p,
+      contempMes: pool.contempMes,
+      partic: pool.partic,
+      horizonte: 60,
+    });
+    return mc && { ...mc, referencia: pool.referencia, admBase: pool.adm, admPedida: pool.admPedida };
+  };
+  const mc = simReal(lanceTotalPct) || monteCarlo({
+    participantes, parcelaMensal: parcelaGrupo, creditoGrupo,
+    lancePctCliente: lanceTotalPct, prazo, numSimulacoes: 1000, maxMeses: 60,
   });
 
-  // Monte Carlo sem lance (fidelidade)
-  const mcFid = monteCarlo({
-    participantes,
-    parcelaMensal: parcelaGrupo,
-    creditoGrupo,
-    lancePctCliente: 0,
-    prazo,
-    numSimulacoes: 1000,
-    maxMeses: 60,
+  // Sem lance de bolso — só sorteio/fidelidade
+  const mcFid = simReal(0) || monteCarlo({
+    participantes, parcelaMensal: parcelaGrupo, creditoGrupo,
+    lancePctCliente: 0, prazo, numSimulacoes: 1000, maxMeses: 60,
   });
 
-  // Status baseado na simulação
-  let status, statusCor;
-  if (mc.probabilidade >= 0.95) { status = "CÓDIGO 31"; statusCor = "#D4781E"; }
-  else if (mc.probabilidade >= 0.80) { status = "ALTA CHANCE"; statusCor = "#E8943A"; }
-  else if (mc.probabilidade >= 0.50) { status = "CHANCE MÉDIA"; statusCor = "#D4781E"; }
-  else if (mc.probabilidade >= 0.25) { status = "CHANCE BAIXA"; statusCor = "#F59E0B"; }
-  else { status = "MUITO BAIXA"; statusCor = "#EF4444"; }
+  const { status, cor: statusCor } = classificaStatus(mc.probabilidade, true);
 
   // Financiamento comparativo
   const txFinAa = 0.115;
@@ -563,6 +610,8 @@ function calcular(credito, taxa, prazo, embutidoPct, bolsoPct, preset) {
 
   return {
     credito, taxa, prazo, embutidoPct, bolsoPct,
+    tipoRef: pool?.tipo || preset?.tipo || null,
+    admRef: pool?.referencia ? pool.admPedida : (pool?.adm || preset?.adm || null),
     saldoDev, lanceEmb, lanceBolso, lanceTotal, lanceTotalPct,
     novoSaldo, credLib, credEmp, juros,
     taxaEf, taxaAM, taxaAA,
@@ -980,10 +1029,10 @@ export default function App() {
 
   const resultado = useMemo(() => {
     if (modo === "manual" && calculado) {
-      return calcular(credito, taxa/100, prazo, embutido/100, bolso/100, null);
+      return calcular(credito, taxa/100, prazo, embutido/100, bolso/100, null, POOL_PRESET[preset]);
     }
     return null;
-  }, [modo, calculado, credito, taxa, prazo, embutido, bolso]);
+  }, [modo, calculado, credito, taxa, prazo, embutido, bolso, preset]);
 
   // Closer mode strategies
   const closerEstrategias = useMemo(() => {
@@ -994,26 +1043,28 @@ export default function App() {
     const c = closerData.quantoCusta;
     const entrada = closerData.quantoEntrada;
     const bolsoPct = c > 0 ? entrada / (c / (1 - pr.embutidoMax)) : 0;
+    const pool = POOL_PRESET[pKey];
     return [
       { nome:"Só Embutido", sub:"Zero do bolso", tag:"SEM ENTRADA",
-        ...calcular(c/(1-pr.embutidoMax), pr.taxa, pr.prazo, pr.embutidoMax, 0, pr) },
+        ...calcular(c/(1-pr.embutidoMax), pr.taxa, pr.prazo, pr.embutidoMax, 0, pr, pool) },
       ...(entrada > 0 ? [{ nome:"Embutido + Entrada", sub:`${f(entrada)} do bolso`, tag:"COM ENTRADA",
-        ...calcular(c/(1-pr.embutidoMax), pr.taxa, pr.prazo, pr.embutidoMax, bolsoPct, pr) }] : []),
+        ...calcular(c/(1-pr.embutidoMax), pr.taxa, pr.prazo, pr.embutidoMax, bolsoPct, pr, pool) }] : []),
       { nome:"Parcela ½ + Fidelidade", sub:"Sem lance, parcela reduzida", tag:"ZERO CUSTO",
-        ...calcular(c, pr.taxa, pr.prazo, 0, 0, pr) },
+        ...calcular(c, pr.taxa, pr.prazo, 0, 0, pr, pool) },
     ];
   }, [modo, closerStep, closerData]);
 
   const estrategias = useMemo(() => {
     if (modo === "smart" && calculado && p) {
       const c = creditoSmart;
+      const pool = POOL_PRESET[preset];
       return [
         { nome:"🎯 Só Embutido", desc:"Dobra carta. Zero do bolso.", tag:"SEM ENTRADA", tagCor:"#D4781E",
-          ...calcular(c/(1-p.embutidoMax), p.taxa, p.prazo, p.embutidoMax, 0, p) },
+          ...calcular(c/(1-p.embutidoMax), p.taxa, p.prazo, p.embutidoMax, 0, p, pool) },
         { nome:"💰 Embutido + 20%", desc:"Entrada de 20% do bolso.", tag:"COM ENTRADA", tagCor:"#D4781E",
-          ...calcular(c/(1-p.embutidoMax), p.taxa, p.prazo, p.embutidoMax, 0.20, p) },
+          ...calcular(c/(1-p.embutidoMax), p.taxa, p.prazo, p.embutidoMax, 0.20, p, pool) },
         { nome:"⏳ Parcela ½ + Fidelidade", desc:"Carta exata. Sem lance.", tag:"ZERO CUSTO", tagCor:"#8B5CF6",
-          ...calcular(c, p.taxa, p.prazo, 0, 0, p) },
+          ...calcular(c, p.taxa, p.prazo, 0, 0, p, pool) },
       ];
     }
     return [];
@@ -1046,11 +1097,19 @@ export default function App() {
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
           <div>
             <div style={{ fontSize:10, fontWeight:700, color:"#6B7280", letterSpacing:0.5 }}>SIMULAÇÃO CÓDIGO 31</div>
-            <div style={{ fontSize:9, color:"#4B5563" }}>Monte Carlo • {r.mc.numSimulacoes} simulações • {Math.round(r.mc.contemplacoesTotal/r.mc.numSimulacoes*100)}% contemplaram</div>
+            <div style={{ fontSize:9, color:"#4B5563" }}>
+              {r.mc.base !== "real"
+                ? "Modelo estimado — sem histórico de lance pra esta categoria"
+                : r.mc.referencia
+                  ? `Referência: lances reais ${r.mc.admBase} • ${r.mc.admPedida} não publica lance por assembleia • ${META_DADOS.janela}`
+                  : `Lances reais das assembleias ${r.mc.admBase} • ${r.mc.amostras} contemplações • ${META_DADOS.janela}`}
+            </div>
           </div>
           <div style={{ textAlign:"right" }}>
-            <div style={{ fontSize:24, fontWeight:900, color:r.statusCor, fontFamily:"'JetBrains Mono',monospace" }}>{pc1(r.mc.probabilidade)}</div>
-            <div style={{ fontSize:9, color:"#6B7280" }}>em ~{r.mc.mesMedio} meses</div>
+            <div style={{ fontSize:24, fontWeight:900, color:r.statusCor, fontFamily:"'JetBrains Mono',monospace" }}>{probTexto(r.mc.probabilidade)}</div>
+            <div style={{ fontSize:9, color:"#6B7280" }}>
+              {r.mc.p50 ? <>metade contempla até {r.mc.p50}m</> : <>em ~{r.mc.mesMedio} meses</>}
+            </div>
           </div>
         </div>
 
@@ -1059,6 +1118,18 @@ export default function App() {
           <span style={{ fontSize:10, color:"#6B7280" }}>Lance ofertado: {r.lanceTotalPct.toFixed(1)}%</span>
         </div>
         <MiniBar pct={r.mc.probabilidade} color={r.statusCor} />
+
+        {/* Faixa honesta: rápido / provável / demorado */}
+        {r.mc.p50 && (
+          <div className="c31-faixa" style={{ display:"flex", gap:8, marginTop:10 }}>
+            {[["RÁPIDO (10%)", `${r.mc.p10}m`], ["PROVÁVEL (50%)", `${r.mc.p50}m`], ["DEMORADO (90%)", `${r.mc.p90}m`]].map(([k,v],i) => (
+              <div key={i} style={{ flex:"1 1 30%", minWidth:88, background:"rgba(255,255,255,0.02)", border:"1px solid rgba(255,255,255,0.05)", borderRadius:8, padding:"8px 6px", textAlign:"center" }}>
+                <div style={{ fontSize:7, color:"#4B5563", letterSpacing:0.4 }}>{k}</div>
+                <div style={{ fontSize:15, fontWeight:800, color:i===1?r.statusCor:"#C9CDD4", fontFamily:"'JetBrains Mono',monospace" }}>{v}</div>
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* Histograma */}
         <div style={{ marginTop:10 }}>
@@ -1074,7 +1145,7 @@ export default function App() {
           <div style={{ marginTop:10, background:"rgba(139,92,246,0.06)", border:"1px solid rgba(139,92,246,0.12)", borderRadius:8, padding:10 }}>
             <div style={{ fontSize:9, fontWeight:700, color:"#8B5CF6", marginBottom:4 }}>⏳ COM LANCE FIDELIDADE (após 12 meses)</div>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-              <span style={{ fontSize:11, color:"#C9CDD4" }}>Probabilidade: {pc1(r.mcFid.probabilidade)} em ~{r.mcFid.mesMedio} meses</span>
+              <span style={{ fontSize:11, color:"#C9CDD4" }}>Probabilidade: {probTexto(r.mcFid.probabilidade)} em ~{r.mcFid.mesMedio} meses</span>
               <span style={{ fontSize:11, color:"#8B5CF6", fontWeight:700 }}>Meia parcela: {f2(r.parcelaMeia)}/mês</span>
             </div>
             <MiniBar pct={r.mcFid.probabilidade} color="#8B5CF6" />
@@ -1086,13 +1157,25 @@ export default function App() {
       {(() => {
         const creditoBusca = r.credito;
         const gruposCompativeis = GRUPOS_ATIVOS.filter(g => {
+          if (!g.prazo) return false;
+          // grupo só entra se tiver histórico de lance — sem histórico não dá pra simular
+          if (!(g.menores || []).length) return false;
+          // mesma categoria do que o cliente quer (imóvel não compete com veículo)
+          if (r.tipoRef && g.tipo !== r.tipoRef) return false;
+          // prazo coerente com a categoria: imóvel curto demais não sustenta a carta
+          if (r.tipoRef === "imovel" && g.prazo < 60) return false;
+          if (!g.creditos?.length) return true; // planilha de lances não traz faixa de crédito
           const min = Math.min(...g.creditos);
           const max = Math.max(...g.creditos);
           return creditoBusca >= min * 0.7 && creditoBusca <= max * 1.4;
-        });
+        })
+          .sort((a, b) => (a.lanceCerto ?? 999) - (b.lanceCerto ?? 999)) // lance certo menor = melhor grupo
+          .slice(0, 12);
         if (gruposCompativeis.length === 0) return null;
         const hipoteses = gruposCompativeis.map(g => {
-          const credMaisProx = g.creditos.reduce((prev, curr) => Math.abs(curr - creditoBusca) < Math.abs(prev - creditoBusca) ? curr : prev);
+          const credMaisProx = g.creditos?.length
+            ? g.creditos.reduce((prev, curr) => Math.abs(curr - creditoBusca) < Math.abs(prev - creditoBusca) ? curr : prev)
+            : creditoBusca;
           const taxaGrupo = (g.taxa + g.fr) / 100;
           const parcelaGrupo = g.parcela || (credMaisProx * (1 + taxaGrupo) / g.prazo);
           const saldoDev = credMaisProx * (1 + taxaGrupo);
@@ -1107,13 +1190,11 @@ export default function App() {
           const taxaAA = taxaAM * 12;
           const parcela = novoSaldo / g.prazo;
           const lanceTotalPct = (g.embutidoMax / 100 + r.bolsoPct) * 100;
-          const mc = monteCarlo({ participantes: g.partic || 2000, parcelaMensal: parcelaGrupo, creditoGrupo: credMaisProx, lancePctCliente: lanceTotalPct, prazo: g.prazo, numSimulacoes: 500, maxMeses: 48 });
-          let status, statusCor;
-          if (mc.probabilidade >= 0.95) { status = "CÓDIGO 31"; statusCor = "#D4781E"; }
-          else if (mc.probabilidade >= 0.80) { status = "ALTA CHANCE"; statusCor = "#E8943A"; }
-          else if (mc.probabilidade >= 0.50) { status = "CHANCE MÉDIA"; statusCor = "#D4781E"; }
-          else if (mc.probabilidade >= 0.25) { status = "CHANCE BAIXA"; statusCor = "#F59E0B"; }
-          else { status = "MUITO BAIXA"; statusCor = "#EF4444"; }
+          const mc = monteCarloReal({
+            menores: g.menores, lancePct: lanceTotalPct,
+            contempMes: g.contemp, partic: g.partic, horizonte: 48, sims: 500,
+          });
+          const { status, cor: statusCor } = classificaStatus(mc.probabilidade, true);
           return { g, credMaisProx, parcelaGrupo, saldoDev, lanceEmb, lanceBolso, novoSaldo, credLib, credEmp, juros, taxaEf, taxaAM, taxaAA, parcela, lanceTotalPct, mc, status, statusCor };
         }).sort((a,b) => b.mc.probabilidade - a.mc.probabilidade || a.taxaAA - b.taxaAA);
         return (
@@ -1124,7 +1205,7 @@ export default function App() {
               <details key={hi} style={{ marginBottom:8 }}>
                 <summary style={{ background: hi === 0 ? "linear-gradient(135deg,rgba(212,120,30,0.06),rgba(212,120,30,0.02))" : "rgba(255,255,255,0.02)", border: hi === 0 ? `1.5px solid ${h.statusCor}33` : "1px solid rgba(255,255,255,0.04)", borderLeft: `3px solid ${h.g.cor}`, borderRadius: 10, padding: 12, cursor:"pointer", listStyle:"none", position:"relative" }}>
                   {hi === 0 && <div style={{ position:"absolute", top:-7, right:110, background:"linear-gradient(135deg,#D4781E,#A85A15)", color:"#fff", fontSize:7, fontWeight:800, padding:"2px 8px", borderRadius:3 }}>MELHOR OPÇÃO</div>}
-                  <div style={{ position:"absolute", top:-7, right:12, background:h.statusCor, color:"#fff", fontSize:7, fontWeight:800, padding:"2px 8px", borderRadius:3 }}>{h.status} {pc1(h.mc.probabilidade)}</div>
+                  <div style={{ position:"absolute", top:-7, right:12, background:h.statusCor, color:"#fff", fontSize:7, fontWeight:800, padding:"2px 8px", borderRadius:3 }}>{h.status} {probTexto(h.mc.probabilidade)}</div>
                   <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:8 }}>
                     <div style={{ width:7, height:7, borderRadius:"50%", background:h.g.cor }}/>
                     <span style={{ fontSize:13, fontWeight:700, color:"#fff" }}>{h.g.adm}</span>
@@ -1137,7 +1218,13 @@ export default function App() {
                     ))}
                   </div>
                   <MiniBar pct={h.mc.probabilidade} color={h.statusCor} />
-                  <div style={{ fontSize:8, color:"#4B5563", marginTop:6 }}>{h.g.partic?.toLocaleString("pt-BR")||"—"} participantes • {h.g.contemp} contemp/mês • Lance médio: {h.g.lanceMedio}% • ▸ Clique para detalhes</div>
+                  <div style={{ fontSize:8, color:"#4B5563", marginTop:6 }}>
+                    {h.g.lanceCerto != null && (
+                      <><strong style={{ color:"#D4781E" }}>Lance certo: {h.g.lanceCerto}%</strong> (maior dos menores) • </>
+                    )}
+                    {h.g.partic?.toLocaleString("pt-BR")||"—"} participantes • {h.g.contemp ?? "—"} contemp/mês • lance médio {h.g.lanceMedio}%
+                    {h.g.meses < 4 && <span style={{ color:"#F59E0B" }}> • só {h.g.meses}m de histórico</span>} • ▸ detalhes
+                  </div>
                 </summary>
                 <div style={{ padding:"8px 4px", marginTop:-4 }}>
                   <div style={{ background:"rgba(255,255,255,0.02)", border:"1px solid rgba(255,255,255,0.04)", borderRadius:8, padding:12, marginBottom:8 }}>
@@ -1158,7 +1245,7 @@ export default function App() {
                   <div style={{ background:`${h.statusCor}08`, border:`1px solid ${h.statusCor}22`, borderRadius:8, padding:12 }}>
                     <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
                       <div><div style={{ fontSize:9, fontWeight:700, color:"#6B7280" }}>MONTE CARLO — GRUPO {h.g.id}</div><div style={{ fontSize:8, color:"#4B5563" }}>{h.mc.numSimulacoes} sim. • {h.g.partic?.toLocaleString("pt-BR")} partic. • parcela {f2(h.parcelaGrupo)}</div></div>
-                      <div style={{ textAlign:"right" }}><div style={{ fontSize:20, fontWeight:900, color:h.statusCor, fontFamily:"'JetBrains Mono',monospace" }}>{pc1(h.mc.probabilidade)}</div><div style={{ fontSize:8, color:"#6B7280" }}>~{h.mc.mesMedio}m</div></div>
+                      <div style={{ textAlign:"right" }}><div style={{ fontSize:20, fontWeight:900, color:h.statusCor, fontFamily:"'JetBrains Mono',monospace" }}>{probTexto(h.mc.probabilidade)}</div><div style={{ fontSize:8, color:"#6B7280" }}>~{h.mc.mesMedio}m</div></div>
                     </div>
                     <MiniBar pct={h.mc.probabilidade} color={h.statusCor} />
                     <Histograma dist={h.mc.distribuicao} maxMeses={48} />
@@ -1405,12 +1492,12 @@ export default function App() {
               <h2 style={{ fontSize:18, fontWeight:800, color:"#fff" }}>⚡ 3 Estratégias</h2>
               <button onClick={()=>setCalculado(false)} style={{ padding:"4px 10px", borderRadius:5, border:"1px solid rgba(255,255,255,0.06)", background:"transparent", color:"#6B7280", fontSize:9, cursor:"pointer", fontFamily:"inherit" }}>← Editar</button>
             </div>
-            <p style={{ fontSize:10, color:"#4B5563", marginBottom:12 }}>Cliente quer {f(creditoSmart)} • {p.label} • Monte Carlo {estrategias[0].mc.numSimulacoes} simulações</p>
+            <p style={{ fontSize:10, color:"#4B5563", marginBottom:12 }}>Cliente quer {f(creditoSmart)} • {p.label} • {estrategias[0].mc.numSimulacoes} simulações sobre lances reais ({META_DADOS.janela})</p>
 
             {estrategias.map((e,i)=>(
               <details key={i} style={{ marginBottom:10 }}>
                 <summary style={{ ...card(i===1, e.tagCor), cursor:"pointer", listStyle:"none", position:"relative" }}>
-                  <div style={{ position:"absolute", top:-8, right:12, background:e.statusCor, color:"#fff", fontSize:7, fontWeight:800, padding:"3px 8px", borderRadius:4 }}>{e.status} {pc1(e.mc.probabilidade)}</div>
+                  <div style={{ position:"absolute", top:-8, right:12, background:e.statusCor, color:"#fff", fontSize:7, fontWeight:800, padding:"3px 8px", borderRadius:4 }}>{e.status} {probTexto(e.mc.probabilidade)}</div>
                   <div style={{ fontSize:14, fontWeight:800, color:"#fff", marginBottom:4 }}>{e.nome}</div>
                   <div style={{ fontSize:10, color:"#6B7280", marginBottom:8 }}>{e.desc}</div>
                   <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
@@ -1647,7 +1734,7 @@ export default function App() {
                     <details key={i} style={{ marginBottom:10 }} open={i===0}>
                       <summary style={{ ...card(i===0, e.statusCor), cursor:"pointer", listStyle:"none", position:"relative" }}>
                         {i === 0 && <div style={{ position:"absolute", top:-8, right:100, background:"linear-gradient(135deg,#D4781E,#A85A15)", color:"#fff", fontSize:7, fontWeight:800, padding:"3px 8px", borderRadius:4 }}>RECOMENDADA</div>}
-                        <div style={{ position:"absolute", top:-8, right:12, background:e.statusCor, color:"#fff", fontSize:7, fontWeight:800, padding:"3px 8px", borderRadius:4 }}>{e.status} {pc1(e.mc.probabilidade)}</div>
+                        <div style={{ position:"absolute", top:-8, right:12, background:e.statusCor, color:"#fff", fontSize:7, fontWeight:800, padding:"3px 8px", borderRadius:4 }}>{e.status} {probTexto(e.mc.probabilidade)}</div>
                         <div style={{ fontSize:14, fontWeight:800, color:"#fff", marginBottom:2 }}>{e.nome}</div>
                         <div style={{ fontSize:10, color:"#6B7280", marginBottom:8 }}>{e.sub}</div>
                         <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
@@ -1716,7 +1803,7 @@ export default function App() {
                         ["Estratégia", closerEstrategias[0]?.nome || "—"],
                         ["Carta", closerEstrategias[0] ? f(closerEstrategias[0].credito) : "—"],
                         ["Parcela simulada", closerEstrategias[0] ? f2(closerEstrategias[0].parcela) : "—"],
-                        ["Prob. contemplação", closerEstrategias[0] ? pc1(closerEstrategias[0].mc.probabilidade) : "—"],
+                        ["Prob. contemplação", closerEstrategias[0] ? probTexto(closerEstrategias[0].mc.probabilidade) : "—"],
                       ].map(([k,v],i) => (
                         <div key={i} style={{ display:"flex", justifyContent:"space-between", padding:"3px 0", borderBottom:"1px solid rgba(255,255,255,0.02)" }}>
                           <span style={{ fontSize:9, color:"#6B7280" }}>{k}</span>
@@ -1755,6 +1842,15 @@ export default function App() {
       </div>
 
       <div style={{ borderTop:"1px solid rgba(255,255,255,0.04)", marginTop:30, padding:"28px 16px 20px" }}>
+        <div className="c31-container" style={{ paddingTop:0, paddingBottom:14 }}>
+          <div style={{ fontSize:9, color:"#4B5563", lineHeight:1.7, maxWidth:760 }}>
+            Simulação baseada no histórico real de lances contemplados ({META_DADOS.janela}) —
+            fonte: {META_DADOS.fonte_santander} e {META_DADOS.fonte_cnp}, {META_DADOS.total} grupos.
+            <strong style={{ color:"#6B7280" }}> Não é garantia de contemplação:</strong> a contemplação ocorre por
+            sorteio ou lance em assembleia e depende do comportamento dos demais consorciados.
+            Valores de crédito, taxa e parcela sujeitos a reajuste — confirmar no simulador da administradora antes de contratar.
+          </div>
+        </div>
         <div className="c31-container c31-footer-inner" style={{ display:"flex", alignItems:"center", justifyContent:"space-between", paddingTop:0, paddingBottom:0 }}>
           <div style={{ display:"flex", alignItems:"center", gap:12 }}>
             <img src="/gm-logo-texto.png" alt="Grupo Mirandas" style={{ height:32, opacity:0.6 }}/>
@@ -1762,7 +1858,7 @@ export default function App() {
             <img src="/logo-branco.png" alt="Código 31" style={{ height:16, opacity:0.35 }}/>
           </div>
           <div style={{ fontSize:8, color:"#2A2A2A", letterSpacing:0.8, textAlign:"right", lineHeight:1.6 }}>
-            MONTE CARLO • JUROS SIMPLES<br/>DADOS REAIS CNP CAIXA E SANTANDER • {new Date().getFullYear()}
+            LANCES REAIS • {META_DADOS.janela}<br/>ATUALIZADO EM {META_DADOS.gerado_em.split("-").reverse().join("/")}
           </div>
         </div>
       </div>

@@ -28,6 +28,9 @@ input[type="number"], input[type="text"], textarea, select {
   /* Closer step tags wrap */
   .c31-steps-tags { flex-wrap: wrap !important; gap: 4px !important; }
 
+  /* Faixa rápido/provável/demorado: quebra em vez de espremer no celular */
+  .c31-faixa { flex-wrap: wrap !important; }
+
   /* Histograma menor */
   .c31-histograma { height: 36px !important; }
 
