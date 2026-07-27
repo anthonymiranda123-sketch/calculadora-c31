@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback, useRef } from "react";
 import * as XLSX from "xlsx";
+import { Target, Wrench, Zap, Hand, Gem, Thermometer, Handshake, ClipboardList, Coins, Hourglass, Upload } from "lucide-react";
 import {
   GRUPOS as GRUPOS_DADOS, META_DADOS, monteCarloReal, poolCategoria,
   classificaStatus, probTexto,
@@ -661,7 +662,7 @@ const Histograma = ({dist, maxMeses=60}) => {
     <div style={{ display:"flex", alignItems:"flex-end", gap:1, height:50, marginTop:8 }}>
       {bars.map(b => (
         <div key={b.mes} style={{ flex:1, minWidth:2, display:"flex", flexDirection:"column", alignItems:"center" }}>
-          <div style={{ width:"100%", height: b.val > 0 ? Math.max(2, (b.val/max)*48) : 0, background: b.mes <= 12 ? "#D4781E" : b.mes <= 24 ? "#E8943A" : "#F5B06B", borderRadius:"2px 2px 0 0", transition:"height 0.3s" }}/>
+          <div style={{ width:"100%", height: b.val > 0 ? Math.max(2, (b.val/max)*48) : 0, background: b.mes <= 12 ? "#FF6A14" : b.mes <= 24 ? "#FF8A3D" : "#FFB37A", borderRadius:"2px 2px 0 0", transition:"height 0.3s" }}/>
         </div>
       ))}
     </div>
@@ -726,9 +727,9 @@ function ChatCloser() {
     return (
       <div className="c31-chat-bubble" onClick={()=>{setOpen(true);setTimeout(()=>inputRef.current?.focus(),100);}} style={{
         position:"fixed", bottom:20, right:20, width:56, height:56, borderRadius:16,
-        background:"linear-gradient(135deg,#D4781E,#A85A15)", cursor:"pointer",
+        background:"linear-gradient(135deg,#FF6A14,#C2410C)", cursor:"pointer",
         display:"flex", alignItems:"center", justifyContent:"center",
-        boxShadow:"0 4px 20px rgba(212,120,30,0.4)", zIndex:1000, transition:"transform 0.2s",
+        boxShadow:"0 4px 20px rgba(255,106,20,0.4)", zIndex:1000, transition:"transform 0.2s",
       }}
         onMouseEnter={e=>e.currentTarget.style.transform="scale(1.08)"}
         onMouseLeave={e=>e.currentTarget.style.transform="scale(1)"}
@@ -744,7 +745,7 @@ function ChatCloser() {
     <div className="c31-chat" style={{
       position:"fixed", bottom:20, right:20, width:380, maxWidth:"calc(100vw - 32px)",
       height:520, maxHeight:"calc(100vh - 40px)",
-      background:"#0E0E0E", border:"1px solid rgba(212,120,30,0.2)", borderRadius:16,
+      background:"#0E0E0E", border:"1px solid rgba(255,106,20,0.2)", borderRadius:16,
       display:"flex", flexDirection:"column", zIndex:1000,
       boxShadow:"0 8px 40px rgba(0,0,0,0.6)",
       fontFamily:"'DM Sans',system-ui,sans-serif",
@@ -756,7 +757,7 @@ function ChatCloser() {
         background:"linear-gradient(135deg,#1A1008,#0E0E0E)", borderRadius:"16px 16px 0 0",
       }}>
         <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-          <div style={{ width:8, height:8, borderRadius:"50%", background: papel === "closer" ? "#D4781E" : papel === "assistente" ? "#8B5CF6" : "#6B7280", boxShadow: papel ? `0 0 8px ${papel === "closer" ? "rgba(212,120,30,0.5)" : "rgba(139,92,246,0.5)"}` : "none" }}/>
+          <div style={{ width:8, height:8, borderRadius:"50%", background: papel === "closer" ? "#FF6A14" : papel === "assistente" ? "#FAAF2E" : "#6B7280", boxShadow: papel ? `0 0 8px ${papel === "closer" ? "rgba(255,106,20,0.5)" : "rgba(250,175,46,0.5)"}` : "none" }}/>
           <div>
             <div style={{ fontSize:13, fontWeight:800, color:"#fff" }}>Coach Anthony</div>
             <div style={{ fontSize:8, color:"#6B7280" }}>{papel === "closer" ? "Modo Closer — foco em fechar" : papel === "assistente" ? "Modo Assistente — aquecer e agendar" : "Escolha seu papel"}</div>
@@ -775,20 +776,20 @@ function ChatCloser() {
             <div style={{ fontSize:14, fontWeight:800, color:"#fff", marginBottom:4 }}>Qual é o seu papel?</div>
             <div style={{ fontSize:10, color:"#6B7280" }}>A IA adapta as respostas pro seu objetivo</div>
           </div>
-          <div onClick={()=>iniciarChat("closer")} style={{ background:"rgba(212,120,30,0.06)", border:"1.5px solid rgba(212,120,30,0.2)", borderRadius:12, padding:16, cursor:"pointer" }}>
+          <div onClick={()=>iniciarChat("closer")} style={{ background:"rgba(255,106,20,0.06)", border:"1.5px solid rgba(255,106,20,0.2)", borderRadius:12, padding:16, cursor:"pointer" }}>
             <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-              <div style={{ width:36, height:36, borderRadius:8, background:"linear-gradient(135deg,#D4781E,#A85A15)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, flexShrink:0 }}>🎯</div>
+              <div style={{ width:36, height:36, borderRadius:8, background:"linear-gradient(135deg,#FF6A14,#C2410C)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}><Target size={18} color="#fff"/></div>
               <div>
-                <div style={{ fontSize:13, fontWeight:800, color:"#D4781E" }}>Closer</div>
+                <div style={{ fontSize:13, fontWeight:800, color:"#FF6A14" }}>Closer</div>
                 <div style={{ fontSize:10, color:"#9CA3AF", lineHeight:1.5 }}>Tô na call com o cliente. Preciso saber o que falar pra <strong style={{ color:"#fff" }}>fechar a venda</strong>.</div>
               </div>
             </div>
           </div>
-          <div onClick={()=>iniciarChat("assistente")} style={{ background:"rgba(139,92,246,0.06)", border:"1.5px solid rgba(139,92,246,0.2)", borderRadius:12, padding:16, cursor:"pointer" }}>
+          <div onClick={()=>iniciarChat("assistente")} style={{ background:"rgba(250,175,46,0.06)", border:"1.5px solid rgba(250,175,46,0.2)", borderRadius:12, padding:16, cursor:"pointer" }}>
             <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-              <div style={{ width:36, height:36, borderRadius:8, background:"linear-gradient(135deg,#8B5CF6,#6D28D9)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, flexShrink:0 }}>📋</div>
+              <div style={{ width:36, height:36, borderRadius:8, background:"linear-gradient(135deg,#FAAF2E,#E09112)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}><ClipboardList size={18} color="#fff"/></div>
               <div>
-                <div style={{ fontSize:13, fontWeight:800, color:"#8B5CF6" }}>Assistente de Vendas</div>
+                <div style={{ fontSize:13, fontWeight:800, color:"#FAAF2E" }}>Assistente de Vendas</div>
                 <div style={{ fontSize:10, color:"#9CA3AF", lineHeight:1.5 }}>Preciso <strong style={{ color:"#fff" }}>aquecer o lead e agendar</strong> reunião com o closer.</div>
               </div>
             </div>
@@ -804,12 +805,12 @@ function ChatCloser() {
             maxWidth:"85%",
           }}>
             <div style={{
-              background: m.role === "user" ? "rgba(212,120,30,0.12)" : "rgba(255,255,255,0.04)",
-              border: m.role === "user" ? "1px solid rgba(212,120,30,0.2)" : "1px solid rgba(255,255,255,0.06)",
+              background: m.role === "user" ? "rgba(255,106,20,0.12)" : "rgba(255,255,255,0.04)",
+              border: m.role === "user" ? "1px solid rgba(255,106,20,0.2)" : "1px solid rgba(255,255,255,0.06)",
               borderRadius: m.role === "user" ? "12px 12px 2px 12px" : "12px 12px 12px 2px",
               padding:"10px 12px",
             }}>
-              {m.role === "assistant" && <div style={{ fontSize:8, fontWeight:700, color:"#D4781E", marginBottom:4 }}>ANTHONY</div>}
+              {m.role === "assistant" && <div style={{ fontSize:8, fontWeight:700, color:"#FF6A14", marginBottom:4 }}>ANTHONY</div>}
               <div style={{ fontSize:12, color: m.role === "user" ? "#E5E7EB" : "#C9CDD4", lineHeight:1.6, whiteSpace:"pre-wrap" }}>{m.content}</div>
             </div>
             {m.role === "assistant" && i > 0 && !m.feedback && (
@@ -818,7 +819,7 @@ function ChatCloser() {
                   const newMsgs = [...msgs]; newMsgs[i] = {...m, feedback:"worked"};
                   setMsgs(newMsgs);
                   fetch("/api/log",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({type:"chat",content:m.content,feedback:"worked"})}).catch(()=>{});
-                }} style={{ fontSize:8, padding:"2px 6px", borderRadius:4, border:"1px solid rgba(212,120,30,0.15)", background:"transparent", color:"#6B7280", cursor:"pointer", fontFamily:"inherit" }}>Funcionou</button>
+                }} style={{ fontSize:8, padding:"2px 6px", borderRadius:4, border:"1px solid rgba(255,106,20,0.15)", background:"transparent", color:"#6B7280", cursor:"pointer", fontFamily:"inherit" }}>Funcionou</button>
                 <button onClick={()=>{
                   const newMsgs = [...msgs]; newMsgs[i] = {...m, feedback:"didnt_work"};
                   setMsgs(newMsgs);
@@ -827,7 +828,7 @@ function ChatCloser() {
               </div>
             )}
             {m.role === "assistant" && m.feedback && (
-              <div style={{ fontSize:8, color: m.feedback === "worked" ? "#D4781E" : "#EF4444", marginTop:3 }}>
+              <div style={{ fontSize:8, color: m.feedback === "worked" ? "#FF6A14" : "#D83C31", marginTop:3 }}>
                 {m.feedback === "worked" ? "Registrado" : "Registrado — vou melhorar"}
               </div>
             )}
@@ -835,7 +836,7 @@ function ChatCloser() {
         ))}
         {loading && (
           <div style={{ alignSelf:"flex-start", maxWidth:"85%", background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.06)", borderRadius:"12px 12px 12px 2px", padding:"10px 12px" }}>
-            <div style={{ fontSize:8, fontWeight:700, color:"#D4781E", marginBottom:4 }}>ANTHONY</div>
+            <div style={{ fontSize:8, fontWeight:700, color:"#FF6A14", marginBottom:4 }}>ANTHONY</div>
             <div style={{ fontSize:12, color:"#6B7280" }}>Pensando...</div>
           </div>
         )}
@@ -857,7 +858,7 @@ function ChatCloser() {
         />
         <button onClick={send} disabled={loading || !input.trim()} style={{
           padding:"10px 16px", borderRadius:10, border:"none",
-          background: input.trim() ? `linear-gradient(135deg,${papel==="assistente"?"#8B5CF6,#6D28D9":"#D4781E,#A85A15"})` : "rgba(255,255,255,0.04)",
+          background: input.trim() ? `linear-gradient(135deg,${papel==="assistente"?"#FAAF2E,#E09112":"#FF6A14,#C2410C"})` : "rgba(255,255,255,0.04)",
           color: input.trim() ? "#fff" : "#4B5563", fontSize:12, fontWeight:700,
           cursor: input.trim() ? "pointer" : "default", fontFamily:"inherit",
         }}>
@@ -873,7 +874,7 @@ function ChatCloser() {
           "Cliente disse 'vou pensar'","Como explicar consórcio?","Cliente não tem entrada","Cliente tem pressa","Como fechar agora?","Cola conversa WhatsApp","Analisa as dores"
         ]).map((q,i)=>(
           <button key={i} onClick={()=>{setInput(q);setTimeout(()=>inputRef.current?.focus(),50);}} style={{
-            padding:"4px 8px", borderRadius:6, border:`1px solid ${papel==="assistente"?"rgba(139,92,246,0.08)":"rgba(255,255,255,0.04)"}`,
+            padding:"4px 8px", borderRadius:6, border:`1px solid ${papel==="assistente"?"rgba(250,175,46,0.08)":"rgba(255,255,255,0.04)"}`,
             background:"transparent", color:"#4B5563", fontSize:8, cursor:"pointer",
             fontFamily:"inherit", fontWeight:600,
           }}>{q}</button>
@@ -1045,11 +1046,11 @@ export default function App() {
     const bolsoPct = c > 0 ? entrada / (c / (1 - pr.embutidoMax)) : 0;
     const pool = POOL_PRESET[pKey];
     return [
-      { nome:"Só Embutido", sub:"Zero do bolso", tag:"SEM ENTRADA",
+      { nome:"Só Embutido", Ico:Target, sub:"Zero do bolso", tag:"SEM ENTRADA",
         ...calcular(c/(1-pr.embutidoMax), pr.taxa, pr.prazo, pr.embutidoMax, 0, pr, pool) },
-      ...(entrada > 0 ? [{ nome:"Embutido + Entrada", sub:`${f(entrada)} do bolso`, tag:"COM ENTRADA",
+      ...(entrada > 0 ? [{ nome:"Embutido + Entrada", Ico:Coins, sub:`${f(entrada)} do bolso`, tag:"COM ENTRADA",
         ...calcular(c/(1-pr.embutidoMax), pr.taxa, pr.prazo, pr.embutidoMax, bolsoPct, pr, pool) }] : []),
-      { nome:"Parcela ½ + Fidelidade", sub:"Sem lance, parcela reduzida", tag:"ZERO CUSTO",
+      { nome:"Parcela ½ + Fidelidade", Ico:Hourglass, sub:"Sem lance, parcela reduzida", tag:"ZERO CUSTO",
         ...calcular(c, pr.taxa, pr.prazo, 0, 0, pr, pool) },
     ];
   }, [modo, closerStep, closerData]);
@@ -1059,11 +1060,11 @@ export default function App() {
       const c = creditoSmart;
       const pool = POOL_PRESET[preset];
       return [
-        { nome:"🎯 Só Embutido", desc:"Dobra carta. Zero do bolso.", tag:"SEM ENTRADA", tagCor:"#D4781E",
+        { nome:"Só Embutido", Ico:Target, desc:"Dobra carta. Zero do bolso.", tag:"SEM ENTRADA", tagCor:"#FF6A14",
           ...calcular(c/(1-p.embutidoMax), p.taxa, p.prazo, p.embutidoMax, 0, p, pool) },
-        { nome:"💰 Embutido + 20%", desc:"Entrada de 20% do bolso.", tag:"COM ENTRADA", tagCor:"#D4781E",
+        { nome:"Embutido + 20%", Ico:Coins, desc:"Entrada de 20% do bolso.", tag:"COM ENTRADA", tagCor:"#FF6A14",
           ...calcular(c/(1-p.embutidoMax), p.taxa, p.prazo, p.embutidoMax, 0.20, p, pool) },
-        { nome:"⏳ Parcela ½ + Fidelidade", desc:"Carta exata. Sem lance.", tag:"ZERO CUSTO", tagCor:"#8B5CF6",
+        { nome:"Parcela ½ + Fidelidade", Ico:Hourglass, desc:"Carta exata. Sem lance.", tag:"ZERO CUSTO", tagCor:"#FAAF2E",
           ...calcular(c, p.taxa, p.prazo, 0, 0, p, pool) },
       ];
     }
@@ -1072,21 +1073,21 @@ export default function App() {
 
   const card = (a, bCor) => ({
     background: a ? "linear-gradient(135deg,#1A1008,#231710)" : "rgba(255,255,255,0.015)",
-    border: bCor ? `1.5px solid ${bCor}33` : a ? "1.5px solid rgba(212,120,30,0.25)" : "1px solid rgba(255,255,255,0.04)",
+    border: bCor ? `1.5px solid ${bCor}33` : a ? "1.5px solid rgba(255,106,20,0.25)" : "1px solid rgba(255,255,255,0.04)",
     borderRadius:12, padding:16, marginBottom:10,
   });
 
   const ResultBlock = ({r, title}) => (
     <div>
       {/* TAXA EFETIVA */}
-      <div style={{ background:"linear-gradient(135deg,#1A1008,#2A1C10)", borderRadius:14, padding:20, marginBottom:14, border:"1px solid rgba(212,120,30,0.2)" }}>
+      <div style={{ background:"linear-gradient(135deg,#1A1008,#2A1C10)", borderRadius:14, padding:20, marginBottom:14, border:"1px solid rgba(255,106,20,0.2)" }}>
         <div style={{ textAlign:"center", marginBottom:14 }}>
           <div style={{ fontSize:10, color:"rgba(255,255,255,0.4)", fontWeight:700, textTransform:"uppercase", letterSpacing:1 }}>Custo Efetivo Real</div>
-          <div style={{ fontSize:40, fontWeight:900, color:"#D4781E", fontFamily:"'JetBrains Mono',monospace", lineHeight:1.1 }}>{pc(r.taxaAA)} <span style={{ fontSize:14, color:"rgba(212,120,30,0.5)" }}>a.a.</span></div>
+          <div style={{ fontSize:40, fontWeight:900, color:"#FF6A14", fontFamily:"'JetBrains Mono',monospace", lineHeight:1.1 }}>{pc(r.taxaAA)} <span style={{ fontSize:14, color:"rgba(255,106,20,0.5)" }}>a.a.</span></div>
           <div style={{ fontSize:12, color:"rgba(255,255,255,0.5)" }}>{pc(r.taxaAM)} a.m. • Juros simples sobre {f(r.credEmp)}</div>
         </div>
         <div className="c31-metrics" style={{ display:"flex", justifyContent:"space-around", flexWrap:"wrap", gap:8 }}>
-          {[["Emprestado",f(r.credEmp),"#D4781E"],["Juros",f(r.juros),"#EF4444"],["Parcela",f2(r.parcela)+"/mês","#fff"]].map(([k,v,c],i)=>(
+          {[["Emprestado",f(r.credEmp),"#FF6A14"],["Juros",f(r.juros),"#D83C31"],["Parcela",f2(r.parcela)+"/mês","#fff"]].map(([k,v,c],i)=>(
             <div key={i} style={{ textAlign:"center" }}><div style={{ fontSize:8, color:"rgba(255,255,255,0.3)" }}>{k}</div><div style={{ fontSize:16, fontWeight:800, color:c, fontFamily:"'JetBrains Mono',monospace" }}>{v}</div></div>
           ))}
         </div>
@@ -1142,13 +1143,13 @@ export default function App() {
 
         {/* Fidelidade */}
         {r.bolsoPct === 0 && r.embutidoPct === 0 && (
-          <div style={{ marginTop:10, background:"rgba(139,92,246,0.06)", border:"1px solid rgba(139,92,246,0.12)", borderRadius:8, padding:10 }}>
-            <div style={{ fontSize:9, fontWeight:700, color:"#8B5CF6", marginBottom:4 }}>⏳ COM LANCE FIDELIDADE (após 12 meses)</div>
+          <div style={{ marginTop:10, background:"rgba(250,175,46,0.06)", border:"1px solid rgba(250,175,46,0.12)", borderRadius:8, padding:10 }}>
+            <div style={{ fontSize:9, fontWeight:700, color:"#FAAF2E", marginBottom:4, display:"flex", alignItems:"center", gap:5 }}><Hourglass size={11}/> COM LANCE FIDELIDADE (após 12 meses)</div>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
               <span style={{ fontSize:11, color:"#C9CDD4" }}>Probabilidade: {probTexto(r.mcFid.probabilidade)} em ~{r.mcFid.mesMedio} meses</span>
-              <span style={{ fontSize:11, color:"#8B5CF6", fontWeight:700 }}>Meia parcela: {f2(r.parcelaMeia)}/mês</span>
+              <span style={{ fontSize:11, color:"#FAAF2E", fontWeight:700 }}>Meia parcela: {f2(r.parcelaMeia)}/mês</span>
             </div>
-            <MiniBar pct={r.mcFid.probabilidade} color="#8B5CF6" />
+            <MiniBar pct={r.mcFid.probabilidade} color="#FAAF2E" />
           </div>
         )}
       </div>
@@ -1203,8 +1204,8 @@ export default function App() {
             <div style={{ fontSize:9, color:"#4B5563", marginBottom:12 }}>Cada grupo simulado com Monte Carlo • Fórmula de custo efetivo aplicada</div>
             {hipoteses.map((h, hi) => (
               <details key={hi} style={{ marginBottom:8 }}>
-                <summary style={{ background: hi === 0 ? "linear-gradient(135deg,rgba(212,120,30,0.06),rgba(212,120,30,0.02))" : "rgba(255,255,255,0.02)", border: hi === 0 ? `1.5px solid ${h.statusCor}33` : "1px solid rgba(255,255,255,0.04)", borderLeft: `3px solid ${h.g.cor}`, borderRadius: 10, padding: 12, cursor:"pointer", listStyle:"none", position:"relative" }}>
-                  {hi === 0 && <div style={{ position:"absolute", top:-7, right:110, background:"linear-gradient(135deg,#D4781E,#A85A15)", color:"#fff", fontSize:7, fontWeight:800, padding:"2px 8px", borderRadius:3 }}>MELHOR OPÇÃO</div>}
+                <summary style={{ background: hi === 0 ? "linear-gradient(135deg,rgba(255,106,20,0.06),rgba(255,106,20,0.02))" : "rgba(255,255,255,0.02)", border: hi === 0 ? `1.5px solid ${h.statusCor}33` : "1px solid rgba(255,255,255,0.04)", borderLeft: `3px solid ${h.g.cor}`, borderRadius: 10, padding: 12, cursor:"pointer", listStyle:"none", position:"relative" }}>
+                  {hi === 0 && <div style={{ position:"absolute", top:-7, right:110, background:"linear-gradient(135deg,#FF6A14,#C2410C)", color:"#fff", fontSize:7, fontWeight:800, padding:"2px 8px", borderRadius:3 }}>MELHOR OPÇÃO</div>}
                   <div style={{ position:"absolute", top:-7, right:12, background:h.statusCor, color:"#fff", fontSize:7, fontWeight:800, padding:"2px 8px", borderRadius:3 }}>{h.status} {probTexto(h.mc.probabilidade)}</div>
                   <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:8 }}>
                     <div style={{ width:7, height:7, borderRadius:"50%", background:h.g.cor }}/>
@@ -1213,17 +1214,17 @@ export default function App() {
                     <span style={{ fontSize:9, color:"#4B5563", marginLeft:"auto" }}>{h.g.prazo}m • {h.g.taxa}%+{h.g.fr}% • Emb {h.g.embutidoMax}%</span>
                   </div>
                   <div style={{ display:"flex", gap:8, flexWrap:"wrap", marginBottom:6 }}>
-                    {[["CARTA",f(h.credMaisProx),"#fff"],["DISPONÍVEL",f(h.credLib),"#D4781E"],["EMPRESTADO",f(h.credEmp),"#D4781E"],["PARCELA",f2(h.parcela),"#fff"],["TAXA EF.",pc(h.taxaAA)+" a.a.","#D4781E"],["CONTEMP.",`~${h.mc.mesMedio}m`,h.statusCor]].map(([k,v,c],i) => (
+                    {[["CARTA",f(h.credMaisProx),"#fff"],["DISPONÍVEL",f(h.credLib),"#FF6A14"],["EMPRESTADO",f(h.credEmp),"#FF6A14"],["PARCELA",f2(h.parcela),"#fff"],["TAXA EF.",pc(h.taxaAA)+" a.a.","#FF6A14"],["CONTEMP.",`~${h.mc.mesMedio}m`,h.statusCor]].map(([k,v,c],i) => (
                       <div key={i} style={{ minWidth:70 }}><div style={{ fontSize:7, color:"#4B5563" }}>{k}</div><div style={{ fontSize:12, fontWeight:800, color:c, fontFamily:"'JetBrains Mono',monospace" }}>{v}</div></div>
                     ))}
                   </div>
                   <MiniBar pct={h.mc.probabilidade} color={h.statusCor} />
                   <div style={{ fontSize:8, color:"#4B5563", marginTop:6 }}>
                     {h.g.lanceCerto != null && (
-                      <><strong style={{ color:"#D4781E" }}>Lance certo: {h.g.lanceCerto}%</strong> (maior dos menores) • </>
+                      <><strong style={{ color:"#FF6A14" }}>Lance certo: {h.g.lanceCerto}%</strong> (maior dos menores) • </>
                     )}
                     {h.g.partic?.toLocaleString("pt-BR")||"—"} participantes • {h.g.contemp ?? "—"} contemp/mês • lance médio {h.g.lanceMedio}%
-                    {h.g.meses < 4 && <span style={{ color:"#F59E0B" }}> • só {h.g.meses}m de histórico</span>} • ▸ detalhes
+                    {h.g.meses < 4 && <span style={{ color:"#E09112" }}> • só {h.g.meses}m de histórico</span>} • ▸ detalhes
                   </div>
                 </summary>
                 <div style={{ padding:"8px 4px", marginTop:-4 }}>
@@ -1237,8 +1238,8 @@ export default function App() {
                     <div style={{ marginTop:6 }}><div style={{ fontSize:7, color:"#4B5563", marginBottom:3 }}>Créditos no grupo:</div><div style={{ display:"flex", flexWrap:"wrap", gap:3 }}>{h.g.creditos.map((c,ci)=>(<span key={ci} style={{ fontSize:8, fontWeight:600, padding:"2px 5px", borderRadius:3, background:c===h.credMaisProx?`${h.g.cor}20`:"rgba(255,255,255,0.03)", color:c===h.credMaisProx?h.g.cor:"#6B7280", border:c===h.credMaisProx?`1px solid ${h.g.cor}44`:"1px solid rgba(255,255,255,0.03)", fontFamily:"'JetBrains Mono',monospace" }}>{f(c)}</span>))}</div></div>
                   </div>
                   <div style={{ background:"rgba(255,255,255,0.02)", border:"1px solid rgba(255,255,255,0.04)", borderRadius:8, padding:12, marginBottom:8 }}>
-                    <div style={{ fontSize:9, fontWeight:700, color:"#D4781E", marginBottom:6 }}>CONTA NESTE GRUPO</div>
-                    {[["Crédito (carta)",f(h.credMaisProx),"#fff"],["Saldo devedor",f(h.saldoDev),"#fff"],["Lance embutido",`${f(h.lanceEmb)} (${h.g.embutidoMax}%)`,"#8B5CF6"],["Lance bolso",`${f(h.lanceBolso)} (${pc1(r.bolsoPct)})`,"#F59E0B"],["Lance total",`${h.lanceTotalPct.toFixed(1)}%`,"#fff"],["Novo saldo",f(h.novoSaldo),"#fff"],["Crédito liberado",f(h.credLib),"#D4781E"],["Crédito emprestado",f(h.credEmp),"#D4781E"],["Juros",f(h.juros),"#EF4444"],["Taxa efetiva",`${pc(h.taxaAA)} a.a. (${pc(h.taxaAM)} a.m.)`,"#D4781E"],["Parcela",f2(h.parcela),"#fff"]].map(([k,v,c],i)=>(
+                    <div style={{ fontSize:9, fontWeight:700, color:"#FF6A14", marginBottom:6 }}>CONTA NESTE GRUPO</div>
+                    {[["Crédito (carta)",f(h.credMaisProx),"#fff"],["Saldo devedor",f(h.saldoDev),"#fff"],["Lance embutido",`${f(h.lanceEmb)} (${h.g.embutidoMax}%)`,"#FAAF2E"],["Lance bolso",`${f(h.lanceBolso)} (${pc1(r.bolsoPct)})`,"#E09112"],["Lance total",`${h.lanceTotalPct.toFixed(1)}%`,"#fff"],["Novo saldo",f(h.novoSaldo),"#fff"],["Crédito liberado",f(h.credLib),"#FF6A14"],["Crédito emprestado",f(h.credEmp),"#FF6A14"],["Juros",f(h.juros),"#D83C31"],["Taxa efetiva",`${pc(h.taxaAA)} a.a. (${pc(h.taxaAM)} a.m.)`,"#FF6A14"],["Parcela",f2(h.parcela),"#fff"]].map(([k,v,c],i)=>(
                       <div key={i} style={{ display:"flex", justifyContent:"space-between", padding:"3px 0", borderBottom:"1px solid rgba(255,255,255,0.02)" }}><span style={{ fontSize:9, color:"#6B7280" }}>{k}</span><span style={{ fontSize:10, fontWeight:700, color:c, fontFamily:"'JetBrains Mono',monospace" }}>{v}</span></div>
                     ))}
                   </div>
@@ -1264,11 +1265,11 @@ export default function App() {
         {[
           ["1","Crédito + Taxa = Saldo Dev", `${f(r.credito)} + ${pc1(r.taxa)}`, f(r.saldoDev),"#fff"],
           ["2","- Emb - Bolso = Novo Saldo", `- ${f(r.lanceEmb)} - ${f(r.lanceBolso)}`, f(r.novoSaldo),"#fff"],
-          ["3","Crédito - Emb = Liberado", `${f(r.credito)} - ${f(r.lanceEmb)}`, f(r.credLib),"#D4781E"],
-          ["4","Liberado - Bolso = Emprestado", `${f(r.credLib)} - ${f(r.lanceBolso)}`, f(r.credEmp),"#D4781E"],
-          ["5","Novo Saldo - Emp = Juros", `${f(r.novoSaldo)} - ${f(r.credEmp)}`, f(r.juros),"#EF4444"],
-          ["6","Juros ÷ Emp = Taxa Ef.", `${f(r.juros)} ÷ ${f(r.credEmp)}`, pc(r.taxaEf),"#D4781E"],
-          ["7",`÷ ${r.prazo}m × 12 = % a.a.`, `${pc(r.taxaEf)} ÷ ${r.prazo} × 12`, pc(r.taxaAA),"#D4781E"],
+          ["3","Crédito - Emb = Liberado", `${f(r.credito)} - ${f(r.lanceEmb)}`, f(r.credLib),"#FF6A14"],
+          ["4","Liberado - Bolso = Emprestado", `${f(r.credLib)} - ${f(r.lanceBolso)}`, f(r.credEmp),"#FF6A14"],
+          ["5","Novo Saldo - Emp = Juros", `${f(r.novoSaldo)} - ${f(r.credEmp)}`, f(r.juros),"#D83C31"],
+          ["6","Juros ÷ Emp = Taxa Ef.", `${f(r.juros)} ÷ ${f(r.credEmp)}`, pc(r.taxaEf),"#FF6A14"],
+          ["7",`÷ ${r.prazo}m × 12 = % a.a.`, `${pc(r.taxaEf)} ÷ ${r.prazo} × 12`, pc(r.taxaAA),"#FF6A14"],
         ].map((s,i)=>(
           <div key={i} style={{ display:"flex", alignItems:"center", gap:6, padding:"5px 0", borderBottom:"1px solid rgba(255,255,255,0.03)" }}>
             <div style={{ width:18, height:18, borderRadius:"50%", background:"rgba(255,255,255,0.05)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:8, fontWeight:700, color:"#6B7280", flexShrink:0 }}>{s[0]}</div>
@@ -1283,25 +1284,25 @@ export default function App() {
         <div style={card(false)}>
           <div style={{ fontSize:10, fontWeight:700, color:"#6B7280", marginBottom:8 }}>VS FINANCIAMENTO ({pc1(r.txFinAa)} a.a. sobre {f(r.credEmp)})</div>
           <div style={{ display:"flex", gap:8 }}>
-            <div style={{ flex:1, background:"rgba(212,120,30,0.05)", borderRadius:8, padding:10 }}>
-              <div style={{ fontSize:8, fontWeight:700, color:"#D4781E", marginBottom:4 }}>✓ CONSÓRCIO</div>
+            <div style={{ flex:1, background:"rgba(255,106,20,0.05)", borderRadius:8, padding:10 }}>
+              <div style={{ fontSize:8, fontWeight:700, color:"#FF6A14", marginBottom:4 }}>✓ CONSÓRCIO</div>
               <div style={{ fontSize:8, color:"#6B7280" }}>Juros</div>
-              <div style={{ fontSize:16, fontWeight:800, color:"#D4781E", fontFamily:"'JetBrains Mono',monospace" }}>{f(r.juros)}</div>
+              <div style={{ fontSize:16, fontWeight:800, color:"#FF6A14", fontFamily:"'JetBrains Mono',monospace" }}>{f(r.juros)}</div>
               <div style={{ fontSize:8, color:"#6B7280", marginTop:4 }}>Taxa</div>
-              <div style={{ fontSize:12, fontWeight:700, color:"#D4781E" }}>{pc(r.taxaAA)} a.a.</div>
+              <div style={{ fontSize:12, fontWeight:700, color:"#FF6A14" }}>{pc(r.taxaAA)} a.a.</div>
             </div>
             <div style={{ flex:1, background:"rgba(239,68,68,0.04)", borderRadius:8, padding:10 }}>
-              <div style={{ fontSize:8, fontWeight:700, color:"#EF4444", marginBottom:4 }}>✗ FINANCIAMENTO</div>
+              <div style={{ fontSize:8, fontWeight:700, color:"#D83C31", marginBottom:4 }}>✗ FINANCIAMENTO</div>
               <div style={{ fontSize:8, color:"#6B7280" }}>Juros</div>
-              <div style={{ fontSize:16, fontWeight:800, color:"#EF4444", fontFamily:"'JetBrains Mono',monospace" }}>{f(r.jurosFin)}</div>
+              <div style={{ fontSize:16, fontWeight:800, color:"#D83C31", fontFamily:"'JetBrains Mono',monospace" }}>{f(r.jurosFin)}</div>
               <div style={{ fontSize:8, color:"#6B7280", marginTop:4 }}>Taxa</div>
-              <div style={{ fontSize:12, fontWeight:700, color:"#EF4444" }}>{pc(r.txFinAa)} a.a.</div>
+              <div style={{ fontSize:12, fontWeight:700, color:"#D83C31" }}>{pc(r.txFinAa)} a.a.</div>
             </div>
           </div>
           {r.jurosFin > r.juros && (
-            <div style={{ textAlign:"center", marginTop:8, padding:8, background:"rgba(212,120,30,0.06)", borderRadius:6 }}>
+            <div style={{ textAlign:"center", marginTop:8, padding:8, background:"rgba(255,106,20,0.06)", borderRadius:6 }}>
               <div style={{ fontSize:8, color:"rgba(255,255,255,0.3)" }}>ECONOMIA</div>
-              <div style={{ fontSize:22, fontWeight:900, color:"#D4781E", fontFamily:"'JetBrains Mono',monospace" }}>{f(r.jurosFin - r.juros)}</div>
+              <div style={{ fontSize:22, fontWeight:900, color:"#FF6A14", fontFamily:"'JetBrains Mono',monospace" }}>{f(r.jurosFin - r.juros)}</div>
             </div>
           )}
         </div>
@@ -1330,7 +1331,7 @@ export default function App() {
     <div style={{ minHeight:"100vh", background:"#0A0A0A", fontFamily:"'DM Sans',system-ui,sans-serif", color:"#C9CDD4" }}>
       <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700;800&display=swap" rel="stylesheet"/>
 
-      <div style={{ background:"linear-gradient(160deg,#1A1008,#120C06 70%,#0A0A0A)", padding:"14px 16px", borderBottom:"1px solid rgba(212,120,30,0.1)" }}>
+      <div style={{ background:"linear-gradient(160deg,#1A1008,#120C06 70%,#0A0A0A)", padding:"14px 16px", borderBottom:"1px solid rgba(255,106,20,0.1)" }}>
         <div className="c31-container" style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:0 }}>
           <div className="c31-header-inner" style={{ display:"flex", alignItems:"center", gap:14 }}>
             <img src="/gm-icon.png" alt="Grupo Mirandas" style={{ height:36, borderRadius:6, opacity:0.9 }}/>
@@ -1338,8 +1339,8 @@ export default function App() {
             <img src="/logo-branco.png" alt="Código 31" style={{ height:24 }}/>
           </div>
           <div className="c31-header-actions" style={{ display:"flex", gap:6, alignItems:"center" }}>
-            {gruposImportados.length > 0 && <span style={{ fontSize:8, color:"#D4781E", fontWeight:700, background:"rgba(212,120,30,0.1)", padding:"2px 6px", borderRadius:4 }}>{GRUPOS_ATIVOS.length} grupos</span>}
-            <button className="c31-import-btn" onClick={()=>setShowImport(v=>!v)} style={{ padding:"4px 10px", borderRadius:5, border:`1px solid ${showImport?"rgba(212,120,30,0.3)":"rgba(255,255,255,0.06)"}`, background:showImport?"rgba(212,120,30,0.08)":"transparent", color:showImport?"#D4781E":"#6B7280", fontSize:9, cursor:"pointer", fontFamily:"inherit", fontWeight:600 }}>Importar Planilhas</button>
+            {gruposImportados.length > 0 && <span style={{ fontSize:8, color:"#FF6A14", fontWeight:700, background:"rgba(255,106,20,0.1)", padding:"2px 6px", borderRadius:4 }}>{GRUPOS_ATIVOS.length} grupos</span>}
+            <button className="c31-import-btn" onClick={()=>setShowImport(v=>!v)} style={{ padding:"4px 10px", borderRadius:5, border:`1px solid ${showImport?"rgba(255,106,20,0.3)":"rgba(255,255,255,0.06)"}`, background:showImport?"rgba(255,106,20,0.08)":"transparent", color:showImport?"#FF6A14":"#6B7280", fontSize:9, cursor:"pointer", fontFamily:"inherit", fontWeight:600, display:"inline-flex", alignItems:"center", gap:5 }}><Upload size={11}/> Importar Planilhas</button>
             {modo && <button onClick={()=>{setModo(null);setCalculado(false);}} style={{ padding:"4px 10px", borderRadius:5, border:"1px solid rgba(255,255,255,0.06)", background:"transparent", color:"#6B7280", fontSize:9, cursor:"pointer", fontFamily:"inherit" }}>← Início</button>}
           </div>
         </div>
@@ -1352,11 +1353,11 @@ export default function App() {
             <div style={{ fontSize:12, fontWeight:700, color:"#fff", marginBottom:10 }}>Importar Planilhas</div>
             <div style={{ fontSize:10, color:"#6B7280", marginBottom:12, lineHeight:1.6 }}>
               Suba planilhas .xlsx para atualizar os dados dos grupos. O sistema detecta automaticamente o tipo:<br/>
-              <span style={{ color:"#005CA9", fontWeight:600 }}>CNP Caixa</span> (nome com "CNP" ou "Caixa") • <span style={{ color:"#EC0000", fontWeight:600 }}>Santander</span> (nome com "Santander") • <span style={{ color:"#D4781E", fontWeight:600 }}>Lances/Sorteios</span> (nome com "Lance" ou "Tabela")
+              <span style={{ color:"#005CA9", fontWeight:600 }}>CNP Caixa</span> (nome com "CNP" ou "Caixa") • <span style={{ color:"#EC0000", fontWeight:600 }}>Santander</span> (nome com "Santander") • <span style={{ color:"#FF6A14", fontWeight:600 }}>Lances/Sorteios</span> (nome com "Lance" ou "Tabela")
             </div>
 
             <div
-              onDragOver={e => { e.preventDefault(); e.currentTarget.style.borderColor = "rgba(212,120,30,0.5)"; }}
+              onDragOver={e => { e.preventDefault(); e.currentTarget.style.borderColor = "rgba(255,106,20,0.5)"; }}
               onDragLeave={e => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)"; }}
               onDrop={e => { e.preventDefault(); e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)"; for (const f of e.dataTransfer.files) { if (f.name.endsWith(".xlsx") || f.name.endsWith(".xls")) handleImport(f); } }}
               onClick={() => fileRef.current?.click()}
@@ -1372,7 +1373,7 @@ export default function App() {
             {importLog.length > 0 && (
               <div style={{ marginTop:12, maxHeight:120, overflowY:"auto" }}>
                 {importLog.map((log, i) => (
-                  <div key={i} style={{ fontSize:9, color: log.startsWith("ERRO") ? "#EF4444" : "#D4781E", padding:"3px 0", borderBottom:"1px solid rgba(255,255,255,0.02)", fontFamily:"'JetBrains Mono',monospace" }}>
+                  <div key={i} style={{ fontSize:9, color: log.startsWith("ERRO") ? "#D83C31" : "#FF6A14", padding:"3px 0", borderBottom:"1px solid rgba(255,255,255,0.02)", fontFamily:"'JetBrains Mono',monospace" }}>
                     {log}
                   </div>
                 ))}
@@ -1385,7 +1386,7 @@ export default function App() {
                 Base: {GRUPOS_REAIS.length} grupos | Importados: {gruposImportados.length} | Total ativo: {GRUPOS_ATIVOS.length}
               </div>
               {gruposImportados.length > 0 && (
-                <button onClick={() => { setGruposImportados([]); setImportLog(prev => [...prev, "Dados importados limpos. Voltou para base original."]); }} style={{ padding:"3px 8px", borderRadius:4, border:"1px solid rgba(239,68,68,0.2)", background:"rgba(239,68,68,0.05)", color:"#EF4444", fontSize:8, cursor:"pointer", fontFamily:"inherit", fontWeight:600 }}>
+                <button onClick={() => { setGruposImportados([]); setImportLog(prev => [...prev, "Dados importados limpos. Voltou para base original."]); }} style={{ padding:"3px 8px", borderRadius:4, border:"1px solid rgba(239,68,68,0.2)", background:"rgba(239,68,68,0.05)", color:"#D83C31", fontSize:8, cursor:"pointer", fontFamily:"inherit", fontWeight:600 }}>
                   Limpar importados
                 </button>
               )}
@@ -1402,16 +1403,16 @@ export default function App() {
             <h2 style={{ fontSize:20, fontWeight:800, color:"#fff", marginBottom:4, textAlign:"center" }}>Como quer calcular?</h2>
             <p style={{ fontSize:12, color:"#6B7280", textAlign:"center", marginBottom:20 }}>Simulação Código 31 com Monte Carlo</p>
             {/* MODO CLOSER — destaque */}
-            <div onClick={()=>{setModo("closer");setCloserStep(1);}} style={{ ...card(false,"#D4781E"), cursor:"pointer", padding:20, marginBottom:16, position:"relative", overflow:"hidden" }}>
-              <div style={{ position:"absolute", top:0, right:0, background:"linear-gradient(135deg,#D4781E,#A85A15)", padding:"4px 14px", borderRadius:"0 0 0 10px", fontSize:8, fontWeight:800, color:"#fff", letterSpacing:1 }}>MÉTODO ANTHONY</div>
+            <div onClick={()=>{setModo("closer");setCloserStep(1);}} style={{ ...card(false,"#FF6A14"), cursor:"pointer", padding:20, marginBottom:16, position:"relative", overflow:"hidden" }}>
+              <div style={{ position:"absolute", top:0, right:0, background:"linear-gradient(135deg,#FF6A14,#C2410C)", padding:"4px 14px", borderRadius:"0 0 0 10px", fontSize:8, fontWeight:800, color:"#fff", letterSpacing:1 }}>MÉTODO ANTHONY</div>
               <div className="c31-row" style={{ display:"flex", alignItems:"center", gap:16 }}>
-                <div style={{ fontSize:40, flexShrink:0 }}>🎯</div>
+                <div style={{ flexShrink:0, width:56, height:56, borderRadius:14, background:"rgba(255,106,20,0.1)", border:"1px solid rgba(255,106,20,0.25)", display:"flex", alignItems:"center", justifyContent:"center" }}><Target size={28} color="#FF6A14" strokeWidth={1.8}/></div>
                 <div style={{ flex:1 }}>
                   <div style={{ fontSize:18, fontWeight:900, color:"#fff", marginBottom:2 }}>Modo Closer</div>
                   <div style={{ fontSize:11, color:"#9CA3AF", lineHeight:1.5 }}>Guia passo a passo do framework de 5 etapas. Levanta perfil, monta oferta irrecusável e fecha.</div>
                   <div className="c31-steps-tags" style={{ display:"flex", gap:6, marginTop:8, flexWrap:"wrap" }}>
                     {["Abordagem","Perfil","Oferta","Valorização","Fechamento"].map((s,i)=>(
-                      <span key={i} style={{ fontSize:7, fontWeight:700, color:"#D4781E", background:"rgba(212,120,30,0.1)", padding:"2px 6px", borderRadius:3, letterSpacing:0.5 }}>{i+1}. {s}</span>
+                      <span key={i} style={{ fontSize:7, fontWeight:700, color:"#FF6A14", background:"rgba(255,106,20,0.1)", padding:"2px 6px", borderRadius:3, letterSpacing:0.5 }}>{i+1}. {s}</span>
                     ))}
                   </div>
                 </div>
@@ -1419,9 +1420,9 @@ export default function App() {
             </div>
 
             <div className="c31-row" style={{ display:"flex", gap:12 }}>
-              {[["manual","🔧","Manual","Preenche tudo: crédito, taxa, prazo, lances","#D4781E"],["smart","⚡","Inteligente","Só crédito + tipo. Sistema calcula 3 estratégias.","#D4781E"]].map(([k,ico,tit,desc,cor])=>(
+              {[["manual",Wrench,"Manual","Preenche tudo: crédito, taxa, prazo, lances","#FF6A14"],["smart",Zap,"Inteligente","Só crédito + tipo. Sistema calcula 3 estratégias.","#FF6A14"]].map(([k,Ico,tit,desc,cor])=>(
                 <div key={k} onClick={()=>setModo(k)} style={{ flex:1, ...card(false,cor), cursor:"pointer", textAlign:"center", padding:24 }}>
-                  <div style={{ fontSize:32, marginBottom:8 }}>{ico}</div>
+                  <div style={{ display:"flex", justifyContent:"center", marginBottom:10 }}><Ico size={30} color={cor} strokeWidth={1.6}/></div>
                   <div style={{ fontSize:16, fontWeight:800, color:"#fff", marginBottom:4 }}>{tit}</div>
                   <div style={{ fontSize:11, color:"#6B7280", lineHeight:1.5 }}>{desc}</div>
                 </div>
@@ -1433,22 +1434,22 @@ export default function App() {
         {/* MANUAL */}
         {modo==="manual" && !calculado && (
           <div>
-            <h2 style={{ fontSize:18, fontWeight:800, color:"#fff", marginBottom:14 }}>🔧 Modo Manual</h2>
-            <Field label="Crédito bruto" sub="carta" value={credito} onChange={setCredito} min={10000} max={5000000} step={10000} cor="#D4781E" suffix="R$"/>
+            <h2 style={{ fontSize:18, fontWeight:800, color:"#fff", marginBottom:14, display:"flex", alignItems:"center", gap:8 }}><Wrench size={18} color="#FF6A14"/> Modo Manual</h2>
+            <Field label="Crédito bruto" sub="carta" value={credito} onChange={setCredito} min={10000} max={5000000} step={10000} cor="#FF6A14" suffix="R$"/>
             <div style={{ display:"flex", gap:10 }}>
-              <div style={{ flex:1 }}><Field label="Taxa" sub="admin+FR" value={taxa} onChange={setTaxa} min={5} max={40} step={0.5} suffix="%" cor="#D4781E"/></div>
+              <div style={{ flex:1 }}><Field label="Taxa" sub="admin+FR" value={taxa} onChange={setTaxa} min={5} max={40} step={0.5} suffix="%" cor="#FF6A14"/></div>
               <div style={{ flex:1 }}><Field label="Prazo" value={prazo} onChange={setPrazo} min={20} max={240} step={1} suffix="meses"/></div>
             </div>
             <div style={{ display:"flex", gap:10 }}>
-              <div style={{ flex:1 }}><Field label="Lance embutido" value={embutido} onChange={setEmbutido} min={0} max={60} step={5} suffix="%" cor="#8B5CF6"/></div>
-              <div style={{ flex:1 }}><Field label="Lance bolso" value={bolso} onChange={setBolso} min={0} max={50} step={1} suffix="%" cor="#F59E0B"/></div>
+              <div style={{ flex:1 }}><Field label="Lance embutido" value={embutido} onChange={setEmbutido} min={0} max={60} step={5} suffix="%" cor="#FAAF2E"/></div>
+              <div style={{ flex:1 }}><Field label="Lance bolso" value={bolso} onChange={setBolso} min={0} max={50} step={1} suffix="%" cor="#E09112"/></div>
             </div>
             <div style={{ background:"rgba(255,255,255,0.02)", borderRadius:10, padding:12, marginBottom:12, display:"flex", justifyContent:"space-around" }}>
-              <div style={{ textAlign:"center" }}><div style={{ fontSize:7, color:"#4B5563" }}>LIBERADO</div><div style={{ fontSize:14, fontWeight:800, color:"#D4781E", fontFamily:"'JetBrains Mono',monospace" }}>{f(credito*(1-embutido/100))}</div></div>
-              <div style={{ textAlign:"center" }}><div style={{ fontSize:7, color:"#4B5563" }}>EMPRESTADO</div><div style={{ fontSize:14, fontWeight:800, color:"#D4781E", fontFamily:"'JetBrains Mono',monospace" }}>{f(Math.max(0,credito*(1-embutido/100)-credito*bolso/100))}</div></div>
-              <div style={{ textAlign:"center" }}><div style={{ fontSize:7, color:"#4B5563" }}>LANCE TOTAL</div><div style={{ fontSize:14, fontWeight:800, color:"#8B5CF6", fontFamily:"'JetBrains Mono',monospace" }}>{embutido+bolso}%</div></div>
+              <div style={{ textAlign:"center" }}><div style={{ fontSize:7, color:"#4B5563" }}>LIBERADO</div><div style={{ fontSize:14, fontWeight:800, color:"#FF6A14", fontFamily:"'JetBrains Mono',monospace" }}>{f(credito*(1-embutido/100))}</div></div>
+              <div style={{ textAlign:"center" }}><div style={{ fontSize:7, color:"#4B5563" }}>EMPRESTADO</div><div style={{ fontSize:14, fontWeight:800, color:"#FF6A14", fontFamily:"'JetBrains Mono',monospace" }}>{f(Math.max(0,credito*(1-embutido/100)-credito*bolso/100))}</div></div>
+              <div style={{ textAlign:"center" }}><div style={{ fontSize:7, color:"#4B5563" }}>LANCE TOTAL</div><div style={{ fontSize:14, fontWeight:800, color:"#FAAF2E", fontFamily:"'JetBrains Mono',monospace" }}>{embutido+bolso}%</div></div>
             </div>
-            <button onClick={()=>setCalculado(true)} style={{ width:"100%", padding:"14px", borderRadius:10, border:"none", background:"linear-gradient(135deg,#D4781E,#A85A15)", color:"#fff", fontSize:14, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+            <button onClick={()=>setCalculado(true)} style={{ width:"100%", padding:"14px", borderRadius:10, border:"none", background:"linear-gradient(135deg,#FF6A14,#C2410C)", color:"#fff", fontSize:14, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
               Calcular com Monte Carlo →
             </button>
           </div>
@@ -1457,30 +1458,30 @@ export default function App() {
         {modo==="manual" && calculado && resultado && (
           <div>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
-              <h2 style={{ fontSize:18, fontWeight:800, color:"#fff" }}>🔧 Resultado</h2>
+              <h2 style={{ fontSize:18, fontWeight:800, color:"#fff", display:"flex", alignItems:"center", gap:8 }}><Wrench size={18} color="#FF6A14"/> Resultado</h2>
               <button onClick={()=>setCalculado(false)} style={{ padding:"4px 10px", borderRadius:5, border:"1px solid rgba(255,255,255,0.06)", background:"transparent", color:"#6B7280", fontSize:9, cursor:"pointer", fontFamily:"inherit" }}>← Editar</button>
             </div>
             <ResultBlock r={resultado} />
-            <button onClick={()=>window.print()} style={{ width:"100%", padding:"12px", borderRadius:8, border:"none", background:"linear-gradient(135deg,#D4781E,#A85A15)", color:"#fff", fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"inherit", marginTop:8 }}>Imprimir / PDF</button>
+            <button onClick={()=>window.print()} style={{ width:"100%", padding:"12px", borderRadius:8, border:"none", background:"linear-gradient(135deg,#FF6A14,#C2410C)", color:"#fff", fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"inherit", marginTop:8 }}>Imprimir / PDF</button>
           </div>
         )}
 
         {/* SMART */}
         {modo==="smart" && !calculado && (
           <div>
-            <h2 style={{ fontSize:18, fontWeight:800, color:"#fff", marginBottom:14 }}>⚡ Modo Inteligente</h2>
+            <h2 style={{ fontSize:18, fontWeight:800, color:"#fff", marginBottom:14, display:"flex", alignItems:"center", gap:8 }}><Zap size={18} color="#FF6A14"/> Modo Inteligente</h2>
             <div style={{ fontSize:10, fontWeight:700, color:"#6B7280", marginBottom:8 }}>TIPO / ADMINISTRADORA</div>
             <div style={{ display:"flex", flexWrap:"wrap", gap:6, marginBottom:16 }}>
               {Object.entries(PRESETS).map(([k,v])=>(
-                <button key={k} onClick={()=>setPreset(k)} style={{ padding:"8px 14px", borderRadius:7, border:preset===k?"1.5px solid #D4781E":"1px solid rgba(255,255,255,0.05)", background:preset===k?"rgba(212,120,30,0.08)":"transparent", color:preset===k?"#D4781E":"#6B7280", fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>{v.label}</button>
+                <button key={k} onClick={()=>setPreset(k)} style={{ padding:"8px 14px", borderRadius:7, border:preset===k?"1.5px solid #FF6A14":"1px solid rgba(255,255,255,0.05)", background:preset===k?"rgba(255,106,20,0.08)":"transparent", color:preset===k?"#FF6A14":"#6B7280", fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>{v.label}</button>
               ))}
             </div>
-            <Field label="Crédito desejado" sub="no bolso" value={creditoSmart} onChange={setCreditoSmart} min={30000} max={2000000} step={10000} cor="#D4781E" suffix="R$"/>
-            <input type="range" min={30000} max={1500000} step={10000} value={creditoSmart} onChange={e=>setCreditoSmart(Number(e.target.value))} style={{ width:"100%", accentColor:"#D4781E", marginTop:-8, marginBottom:12 }}/>
+            <Field label="Crédito desejado" sub="no bolso" value={creditoSmart} onChange={setCreditoSmart} min={30000} max={2000000} step={10000} cor="#FF6A14" suffix="R$"/>
+            <input type="range" min={30000} max={1500000} step={10000} value={creditoSmart} onChange={e=>setCreditoSmart(Number(e.target.value))} style={{ width:"100%", accentColor:"#FF6A14", marginTop:-8, marginBottom:12 }}/>
             <div style={{ background:"rgba(255,255,255,0.02)", borderRadius:8, padding:10, marginBottom:12, fontSize:10, color:"#4B5563" }}>
               {p.label} • Taxa: {pc1(p.taxa)} • Prazo: {p.prazo}m • Embutido: {pc1(p.embutidoMax)} • {p.participantes} participantes • {p.contemp} contemp/mês
             </div>
-            <button onClick={()=>setCalculado(true)} style={{ width:"100%", padding:"14px", borderRadius:10, border:"none", background:"linear-gradient(135deg,#D4781E,#A85A15)", color:"#fff", fontSize:14, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+            <button onClick={()=>setCalculado(true)} style={{ width:"100%", padding:"14px", borderRadius:10, border:"none", background:"linear-gradient(135deg,#FF6A14,#C2410C)", color:"#fff", fontSize:14, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
               Simular 3 Estratégias (Monte Carlo) →
             </button>
           </div>
@@ -1489,7 +1490,7 @@ export default function App() {
         {modo==="smart" && calculado && estrategias.length > 0 && (
           <div>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
-              <h2 style={{ fontSize:18, fontWeight:800, color:"#fff" }}>⚡ 3 Estratégias</h2>
+              <h2 style={{ fontSize:18, fontWeight:800, color:"#fff", display:"flex", alignItems:"center", gap:8 }}><Zap size={18} color="#FF6A14"/> 3 Estratégias</h2>
               <button onClick={()=>setCalculado(false)} style={{ padding:"4px 10px", borderRadius:5, border:"1px solid rgba(255,255,255,0.06)", background:"transparent", color:"#6B7280", fontSize:9, cursor:"pointer", fontFamily:"inherit" }}>← Editar</button>
             </div>
             <p style={{ fontSize:10, color:"#4B5563", marginBottom:12 }}>Cliente quer {f(creditoSmart)} • {p.label} • {estrategias[0].mc.numSimulacoes} simulações sobre lances reais ({META_DADOS.janela})</p>
@@ -1498,10 +1499,10 @@ export default function App() {
               <details key={i} style={{ marginBottom:10 }}>
                 <summary style={{ ...card(i===1, e.tagCor), cursor:"pointer", listStyle:"none", position:"relative" }}>
                   <div style={{ position:"absolute", top:-8, right:12, background:e.statusCor, color:"#fff", fontSize:7, fontWeight:800, padding:"3px 8px", borderRadius:4 }}>{e.status} {probTexto(e.mc.probabilidade)}</div>
-                  <div style={{ fontSize:14, fontWeight:800, color:"#fff", marginBottom:4 }}>{e.nome}</div>
+                  <div style={{ fontSize:14, fontWeight:800, color:"#fff", marginBottom:4, display:"flex", alignItems:"center", gap:7 }}>{e.Ico && <e.Ico size={16} color={e.tagCor}/>}{e.nome}</div>
                   <div style={{ fontSize:10, color:"#6B7280", marginBottom:8 }}>{e.desc}</div>
                   <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
-                    {[["CARTA",f(e.credito),"#fff"],["DISPONÍVEL",f(e.credLib),"#D4781E"],["EMPRESTADO",f(e.credEmp),"#D4781E"],["TAXA",pc(e.taxaAA)+" a.a.","#D4781E"],["PARCELA",f2(e.parcela),"#fff"],["CONTEMP.",`~${e.mc.mesMedio}m`,e.statusCor]].map(([k,v,c],j)=>(
+                    {[["CARTA",f(e.credito),"#fff"],["DISPONÍVEL",f(e.credLib),"#FF6A14"],["EMPRESTADO",f(e.credEmp),"#FF6A14"],["TAXA",pc(e.taxaAA)+" a.a.","#FF6A14"],["PARCELA",f2(e.parcela),"#fff"],["CONTEMP.",`~${e.mc.mesMedio}m`,e.statusCor]].map(([k,v,c],j)=>(
                       <div key={j}><div style={{ fontSize:7, color:"#4B5563" }}>{k}</div><div style={{ fontSize:13, fontWeight:800, color:c, fontFamily:"'JetBrains Mono',monospace" }}>{v}</div></div>
                     ))}
                   </div>
@@ -1510,17 +1511,17 @@ export default function App() {
                 <div style={{ padding:"0 4px", marginTop:-4 }}><ResultBlock r={e} /></div>
               </details>
             ))}
-            <button onClick={()=>window.print()} style={{ width:"100%", padding:"12px", borderRadius:8, border:"none", background:"linear-gradient(135deg,#D4781E,#A85A15)", color:"#fff", fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"inherit", marginTop:8 }}>Imprimir / PDF</button>
+            <button onClick={()=>window.print()} style={{ width:"100%", padding:"12px", borderRadius:8, border:"none", background:"linear-gradient(135deg,#FF6A14,#C2410C)", color:"#fff", fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"inherit", marginTop:8 }}>Imprimir / PDF</button>
           </div>
         )}
         {/* ═══════ MODO CLOSER ═══════ */}
         {modo==="closer" && (()=>{
           const steps = [
-            { n:1, t:"Abordagem", ico:"👋" },
-            { n:2, t:"Perfil", ico:"🎯" },
-            { n:3, t:"Oferta", ico:"💎" },
-            { n:4, t:"Valorização", ico:"🌡️" },
-            { n:5, t:"Fechamento", ico:"🤝" },
+            { n:1, t:"Abordagem", Ico:Hand },
+            { n:2, t:"Perfil", Ico:Target },
+            { n:3, t:"Oferta", Ico:Gem },
+            { n:4, t:"Valorização", Ico:Thermometer },
+            { n:5, t:"Fechamento", Ico:Handshake },
           ];
           const cd = closerData;
           const setCD = (k,v) => setCloserData(prev => ({...prev, [k]:v}));
@@ -1533,8 +1534,8 @@ export default function App() {
               <div style={{ display:"flex", gap:4, marginBottom:20 }}>
                 {steps.map(s => (
                   <div key={s.n} onClick={()=> s.n <= closerStep && setCloserStep(s.n)} style={{ flex:1, cursor: s.n <= closerStep ? "pointer" : "default" }}>
-                    <div style={{ height:3, borderRadius:2, background: s.n <= closerStep ? "#D4781E" : "rgba(255,255,255,0.06)", transition:"background 0.3s", marginBottom:4 }}/>
-                    <div style={{ fontSize:8, fontWeight:700, color: s.n === closerStep ? "#D4781E" : s.n < closerStep ? "#6B7280" : "#2A2A2A", textAlign:"center", letterSpacing:0.3 }}>{s.ico} {s.t}</div>
+                    <div style={{ height:3, borderRadius:2, background: s.n <= closerStep ? "#FF6A14" : "rgba(255,255,255,0.06)", transition:"background 0.3s", marginBottom:4 }}/>
+                    <div style={{ fontSize:8, fontWeight:700, color: s.n === closerStep ? "#FF6A14" : s.n < closerStep ? "#6B7280" : "#2A2A2A", display:"flex", alignItems:"center", justifyContent:"center", gap:3, letterSpacing:0.3 }}><s.Ico size={9}/> {s.t}</div>
                   </div>
                 ))}
               </div>
@@ -1542,10 +1543,10 @@ export default function App() {
               {/* STEP 1 — ABORDAGEM */}
               {closerStep === 1 && (
                 <div>
-                  <div style={{ ...card(false,"#D4781E"), padding:20 }}>
+                  <div style={{ ...card(false,"#FF6A14"), padding:20 }}>
                     <div style={{ fontSize:14, fontWeight:800, color:"#fff", marginBottom:12 }}>1. Abordagem</div>
-                    <div style={{ background:"rgba(212,120,30,0.06)", border:"1px solid rgba(212,120,30,0.12)", borderRadius:8, padding:12, marginBottom:14 }}>
-                      <div style={{ fontSize:9, fontWeight:700, color:"#D4781E", marginBottom:6, letterSpacing:0.5 }}>REGRAS DE OURO</div>
+                    <div style={{ background:"rgba(255,106,20,0.06)", border:"1px solid rgba(255,106,20,0.12)", borderRadius:8, padding:12, marginBottom:14 }}>
+                      <div style={{ fontSize:9, fontWeight:700, color:"#FF6A14", marginBottom:6, letterSpacing:0.5 }}>REGRAS DE OURO</div>
                       <div style={{ fontSize:11, color:"#C9CDD4", lineHeight:1.7 }}>
                         Nunca entre "seco". <strong style={{ color:"#fff" }}>Videocall com câmera</strong> &gt; Ligação &gt; WhatsApp.<br/>
                         Seja o médico: <strong style={{ color:"#fff" }}>escute primeiro</strong>, nunca abra com o produto.<br/>
@@ -1557,21 +1558,21 @@ export default function App() {
                       <div style={{ fontSize:9, fontWeight:700, color:"#6B7280", marginBottom:8 }}>CHECKLIST</div>
                       {["Câmera ligada (ou justificativa)", "Quebra-gelo feito (rapport)", "Cliente sabe que você vende consórcio", "Combinado: 'Se não servir, eu mesmo vou te falar'"].map((item,i) => (
                         <div key={i} style={{ fontSize:10, color:"#9CA3AF", padding:"4px 0", borderBottom:"1px solid rgba(255,255,255,0.02)", display:"flex", gap:6, alignItems:"center" }}>
-                          <span style={{ color:"#D4781E", fontSize:12 }}>○</span> {item}
+                          <span style={{ color:"#FF6A14", fontSize:12 }}>○</span> {item}
                         </div>
                       ))}
                     </div>
 
-                    <Field label="Nome do cliente" value={cd.nomeCliente} onChange={v=>setCD("nomeCliente",v)} cor="#D4781E"/>
+                    <Field label="Nome do cliente" value={cd.nomeCliente} onChange={v=>setCD("nomeCliente",v)} cor="#FF6A14"/>
 
-                    <div style={{ background:"rgba(139,92,246,0.06)", border:"1px solid rgba(139,92,246,0.12)", borderRadius:8, padding:10, marginBottom:14 }}>
-                      <div style={{ fontSize:9, color:"#8B5CF6", fontWeight:700 }}>FRASE DE ABERTURA</div>
+                    <div style={{ background:"rgba(250,175,46,0.06)", border:"1px solid rgba(250,175,46,0.12)", borderRadius:8, padding:10, marginBottom:14 }}>
+                      <div style={{ fontSize:9, color:"#FAAF2E", fontWeight:700 }}>FRASE DE ABERTURA</div>
                       <div style={{ fontSize:11, color:"#C9CDD4", marginTop:4, fontStyle:"italic", lineHeight:1.6 }}>
                         "Vou te explicar como funciona. Duas coisas: se não entender, me interrompe. Se achar que não é pra você, me fala. Eu não tô aqui pra te vender nada — tô aqui pra te ajudar a decidir. Pode ser que no final eu mesmo diga que consórcio não é pra você agora."
                       </div>
                     </div>
 
-                    <button onClick={()=>setCloserStep(2)} style={{ width:"100%", padding:"14px", borderRadius:10, border:"none", background:"linear-gradient(135deg,#D4781E,#A85A15)", color:"#fff", fontSize:14, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+                    <button onClick={()=>setCloserStep(2)} style={{ width:"100%", padding:"14px", borderRadius:10, border:"none", background:"linear-gradient(135deg,#FF6A14,#C2410C)", color:"#fff", fontSize:14, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
                       Rapport feito → Levantar Perfil
                     </button>
                   </div>
@@ -1581,12 +1582,12 @@ export default function App() {
               {/* STEP 2 — LEVANTAMENTO DE PERFIL */}
               {closerStep === 2 && (
                 <div>
-                  <div style={{ ...card(false,"#D4781E"), padding:20 }}>
+                  <div style={{ ...card(false,"#FF6A14"), padding:20 }}>
                     <div style={{ fontSize:14, fontWeight:800, color:"#fff", marginBottom:4 }}>2. Levantamento de Perfil</div>
-                    <div style={{ fontSize:10, color:"#D4781E", marginBottom:14, fontWeight:600 }}>70% da venda mora aqui. Sem atalhos.</div>
+                    <div style={{ fontSize:10, color:"#FF6A14", marginBottom:14, fontWeight:600 }}>70% da venda mora aqui. Sem atalhos.</div>
 
-                    <div style={{ background:"rgba(212,120,30,0.06)", borderRadius:8, padding:12, marginBottom:14 }}>
-                      <div style={{ fontSize:9, fontWeight:700, color:"#D4781E", marginBottom:6 }}>AS 7 PERGUNTAS</div>
+                    <div style={{ background:"rgba(255,106,20,0.06)", borderRadius:8, padding:12, marginBottom:14 }}>
+                      <div style={{ fontSize:9, fontWeight:700, color:"#FF6A14", marginBottom:6 }}>AS 7 PERGUNTAS</div>
                       <div style={{ fontSize:10, color:"#C9CDD4", lineHeight:2 }}>
                         {["① Por que quer comprar consórcio?","② O que quer comprar?","③ Quanto custa o que quer?","④ Pra quando quer?","⑤ Quanto tem de entrada?","⑥ Quanto pode pagar por mês?","⑦ Qual a renda? Paga aluguel?"].map((q,i) => (
                           <div key={i}>{q}</div>
@@ -1606,24 +1607,24 @@ export default function App() {
                       <label style={{ fontSize:10, fontWeight:700, color:"#6B7280", display:"block", marginBottom:4 }}>② O que quer comprar?</label>
                       <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
                         {[["imovel","Imóvel"],["veiculo","Veículo"],["servico","Serviço/Reforma"],["pesado","Pesado/Agro"]].map(([k,v])=>(
-                          <button key={k} onClick={()=>setCD("oQueComprar",k)} style={{ padding:"6px 12px", borderRadius:6, border: cd.oQueComprar===k ? "1.5px solid #D4781E" : "1px solid rgba(255,255,255,0.06)", background: cd.oQueComprar===k ? "rgba(212,120,30,0.08)" : "transparent", color: cd.oQueComprar===k ? "#D4781E" : "#6B7280", fontSize:10, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>{v}</button>
+                          <button key={k} onClick={()=>setCD("oQueComprar",k)} style={{ padding:"6px 12px", borderRadius:6, border: cd.oQueComprar===k ? "1.5px solid #FF6A14" : "1px solid rgba(255,255,255,0.06)", background: cd.oQueComprar===k ? "rgba(255,106,20,0.08)" : "transparent", color: cd.oQueComprar===k ? "#FF6A14" : "#6B7280", fontSize:10, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>{v}</button>
                         ))}
                       </div>
                     </div>
 
-                    <Field label="③ Quanto custa o que quer?" value={cd.quantoCusta} onChange={v=>setCD("quantoCusta",v)} min={20000} max={5000000} step={10000} suffix="R$" cor="#D4781E"/>
+                    <Field label="③ Quanto custa o que quer?" value={cd.quantoCusta} onChange={v=>setCD("quantoCusta",v)} min={20000} max={5000000} step={10000} suffix="R$" cor="#FF6A14"/>
 
                     <div style={{ marginBottom:10 }}>
                       <label style={{ fontSize:10, fontWeight:700, color:"#6B7280", display:"block", marginBottom:4 }}>④ Pra quando?</label>
                       <div style={{ display:"flex", gap:6 }}>
                         {[["3","3 meses"],["6","6 meses"],["12","1 ano"],["24","2+ anos"],["0","Sem pressa"]].map(([k,v])=>(
-                          <button key={k} onClick={()=>setCD("praQuando",k)} style={{ flex:1, padding:"6px 4px", borderRadius:6, border: cd.praQuando===k ? "1.5px solid #D4781E" : "1px solid rgba(255,255,255,0.06)", background: cd.praQuando===k ? "rgba(212,120,30,0.08)" : "transparent", color: cd.praQuando===k ? "#D4781E" : "#6B7280", fontSize:9, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>{v}</button>
+                          <button key={k} onClick={()=>setCD("praQuando",k)} style={{ flex:1, padding:"6px 4px", borderRadius:6, border: cd.praQuando===k ? "1.5px solid #FF6A14" : "1px solid rgba(255,255,255,0.06)", background: cd.praQuando===k ? "rgba(255,106,20,0.08)" : "transparent", color: cd.praQuando===k ? "#FF6A14" : "#6B7280", fontSize:9, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>{v}</button>
                         ))}
                       </div>
                     </div>
 
-                    <Field label="⑤ Quanto tem de entrada?" value={cd.quantoEntrada} onChange={v=>setCD("quantoEntrada",v)} min={0} max={2000000} step={5000} suffix="R$" cor="#F59E0B"/>
-                    <Field label="⑥ Quanto pode pagar/mês?" value={cd.quantoPorMes} onChange={v=>setCD("quantoPorMes",v)} min={300} max={50000} step={100} suffix="R$" cor="#D4781E"/>
+                    <Field label="⑤ Quanto tem de entrada?" value={cd.quantoEntrada} onChange={v=>setCD("quantoEntrada",v)} min={0} max={2000000} step={5000} suffix="R$" cor="#E09112"/>
+                    <Field label="⑥ Quanto pode pagar/mês?" value={cd.quantoPorMes} onChange={v=>setCD("quantoPorMes",v)} min={300} max={50000} step={100} suffix="R$" cor="#FF6A14"/>
 
                     <div style={{ display:"flex", gap:10 }}>
                       <div style={{ flex:1 }}><Field label="⑦ Renda mensal" value={cd.renda} onChange={v=>setCD("renda",v)} min={1000} max={200000} step={500} suffix="R$"/></div>
@@ -1631,16 +1632,16 @@ export default function App() {
                     </div>
 
                     {/* Comprometimento */}
-                    <div style={{ background: comprOk ? "rgba(212,120,30,0.06)" : "rgba(239,68,68,0.06)", border: `1px solid ${comprOk ? "rgba(212,120,30,0.15)" : "rgba(239,68,68,0.15)"}`, borderRadius:8, padding:12, marginBottom:14 }}>
+                    <div style={{ background: comprOk ? "rgba(255,106,20,0.06)" : "rgba(239,68,68,0.06)", border: `1px solid ${comprOk ? "rgba(255,106,20,0.15)" : "rgba(239,68,68,0.15)"}`, borderRadius:8, padding:12, marginBottom:14 }}>
                       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
                         <div>
                           <div style={{ fontSize:9, fontWeight:700, color:"#6B7280" }}>COMPROMETIMENTO DE RENDA</div>
                           <div style={{ fontSize:8, color:"#4B5563" }}>Parcela + Aluguel = {f(cd.quantoPorMes + cd.pagaAluguel)} / Renda {f(cd.renda)}</div>
                         </div>
-                        <div style={{ fontSize:24, fontWeight:900, color: comprOk ? "#D4781E" : "#EF4444", fontFamily:"'JetBrains Mono',monospace" }}>{comprometimento}%</div>
+                        <div style={{ fontSize:24, fontWeight:900, color: comprOk ? "#FF6A14" : "#D83C31", fontFamily:"'JetBrains Mono',monospace" }}>{comprometimento}%</div>
                       </div>
-                      <MiniBar pct={comprometimento/33} color={comprOk ? "#D4781E" : "#EF4444"} />
-                      <div style={{ fontSize:9, color: comprOk ? "#D4781E" : "#EF4444", marginTop:4, fontWeight:600 }}>
+                      <MiniBar pct={comprometimento/33} color={comprOk ? "#FF6A14" : "#D83C31"} />
+                      <div style={{ fontSize:9, color: comprOk ? "#FF6A14" : "#D83C31", marginTop:4, fontWeight:600 }}>
                         {comprOk ? "Dentro do limite (≤33%)" : "ACIMA do limite. Parcela + aluguel > 1/3 da renda. Ajustar valores."}
                       </div>
                     </div>
@@ -1649,19 +1650,19 @@ export default function App() {
                       <label style={{ fontSize:10, fontWeight:700, color:"#6B7280", display:"block", marginBottom:4 }}>Decide sozinho?</label>
                       <div style={{ display:"flex", gap:6 }}>
                         {[["sim","Sim, decide sozinho"],["nao","Precisa consultar alguém"]].map(([k,v])=>(
-                          <button key={k} onClick={()=>setCD("decideSozinho",k)} style={{ flex:1, padding:"8px", borderRadius:6, border: cd.decideSozinho===k ? "1.5px solid #D4781E" : "1px solid rgba(255,255,255,0.06)", background: cd.decideSozinho===k ? "rgba(212,120,30,0.08)" : "transparent", color: cd.decideSozinho===k ? "#D4781E" : "#6B7280", fontSize:10, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>{v}</button>
+                          <button key={k} onClick={()=>setCD("decideSozinho",k)} style={{ flex:1, padding:"8px", borderRadius:6, border: cd.decideSozinho===k ? "1.5px solid #FF6A14" : "1px solid rgba(255,255,255,0.06)", background: cd.decideSozinho===k ? "rgba(255,106,20,0.08)" : "transparent", color: cd.decideSozinho===k ? "#FF6A14" : "#6B7280", fontSize:10, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>{v}</button>
                         ))}
                       </div>
                       {cd.decideSozinho === "nao" && (
-                        <div style={{ marginTop:6, background:"rgba(239,68,68,0.06)", borderRadius:6, padding:8, fontSize:9, color:"#F59E0B", fontWeight:600 }}>
+                        <div style={{ marginTop:6, background:"rgba(239,68,68,0.06)", borderRadius:6, padding:8, fontSize:9, color:"#E09112", fontWeight:600 }}>
                           Convidar a outra pessoa para a próxima call. Não apresente oferta sem o decisor presente.
                         </div>
                       )}
                     </div>
 
                     {/* Paráfrase */}
-                    <div style={{ background:"rgba(139,92,246,0.06)", border:"1px solid rgba(139,92,246,0.12)", borderRadius:8, padding:12, marginBottom:14 }}>
-                      <div style={{ fontSize:9, fontWeight:700, color:"#8B5CF6", marginBottom:6 }}>PARAFRASEAR AGORA</div>
+                    <div style={{ background:"rgba(250,175,46,0.06)", border:"1px solid rgba(250,175,46,0.12)", borderRadius:8, padding:12, marginBottom:14 }}>
+                      <div style={{ fontSize:9, fontWeight:700, color:"#FAAF2E", marginBottom:6 }}>PARAFRASEAR AGORA</div>
                       <div style={{ fontSize:11, color:"#C9CDD4", lineHeight:1.6, fontStyle:"italic" }}>
                         "{cd.nomeCliente || "Cliente"}, deixa eu ver se entendi: você quer {cd.oQueComprar === "imovel" ? "um imóvel" : cd.oQueComprar === "veiculo" ? "um veículo" : "comprar algo"} de aproximadamente {f(cd.quantoCusta)},
                         {cd.quantoEntrada > 0 ? ` tem ${f(cd.quantoEntrada)} de entrada,` : " não tem entrada,"}
@@ -1674,12 +1675,12 @@ export default function App() {
                       <label style={{ fontSize:10, fontWeight:700, color:"#6B7280", display:"block", marginBottom:4 }}>Tipo / Administradora</label>
                       <div style={{ display:"flex", flexWrap:"wrap", gap:4 }}>
                         {Object.entries(PRESETS).map(([k,v])=>(
-                          <button key={k} onClick={()=>setCD("tipoAdm",k)} style={{ padding:"6px 10px", borderRadius:6, border: cd.tipoAdm===k ? "1.5px solid #D4781E" : "1px solid rgba(255,255,255,0.05)", background: cd.tipoAdm===k ? "rgba(212,120,30,0.08)" : "transparent", color: cd.tipoAdm===k ? "#D4781E" : "#6B7280", fontSize:9, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>{v.label}</button>
+                          <button key={k} onClick={()=>setCD("tipoAdm",k)} style={{ padding:"6px 10px", borderRadius:6, border: cd.tipoAdm===k ? "1.5px solid #FF6A14" : "1px solid rgba(255,255,255,0.05)", background: cd.tipoAdm===k ? "rgba(255,106,20,0.08)" : "transparent", color: cd.tipoAdm===k ? "#FF6A14" : "#6B7280", fontSize:9, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>{v.label}</button>
                         ))}
                       </div>
                     </div>
 
-                    <button onClick={()=>setCloserStep(3)} style={{ width:"100%", padding:"14px", borderRadius:10, border:"none", background:"linear-gradient(135deg,#D4781E,#A85A15)", color:"#fff", fontSize:14, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+                    <button onClick={()=>setCloserStep(3)} style={{ width:"100%", padding:"14px", borderRadius:10, border:"none", background:"linear-gradient(135deg,#FF6A14,#C2410C)", color:"#fff", fontSize:14, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
                       Perfil levantado → Montar Oferta
                     </button>
                   </div>
@@ -1689,12 +1690,12 @@ export default function App() {
               {/* STEP 3 — OFERTA */}
               {closerStep === 3 && (
                 <div>
-                  <div style={{ ...card(false,"#D4781E"), padding:20 }}>
+                  <div style={{ ...card(false,"#FF6A14"), padding:20 }}>
                     <div style={{ fontSize:14, fontWeight:800, color:"#fff", marginBottom:4 }}>3. Oferta Irrecusável</div>
-                    <div style={{ fontSize:10, color:"#D4781E", marginBottom:14, fontWeight:600 }}>"Eu não quero te vender consórcio. Eu quero te entregar o bem."</div>
+                    <div style={{ fontSize:10, color:"#FF6A14", marginBottom:14, fontWeight:600 }}>"Eu não quero te vender consórcio. Eu quero te entregar o bem."</div>
 
-                    <div style={{ background:"rgba(212,120,30,0.06)", borderRadius:8, padding:12, marginBottom:14 }}>
-                      <div style={{ fontSize:9, fontWeight:700, color:"#D4781E", marginBottom:6 }}>REGRAS DA OFERTA</div>
+                    <div style={{ background:"rgba(255,106,20,0.06)", borderRadius:8, padding:12, marginBottom:14 }}>
+                      <div style={{ fontSize:9, fontWeight:700, color:"#FF6A14", marginBottom:6 }}>REGRAS DA OFERTA</div>
                       <div style={{ fontSize:10, color:"#C9CDD4", lineHeight:1.7 }}>
                         Proibido fazer palestra de consórcio. <strong style={{ color:"#fff" }}>Conecte à dor do cliente.</strong><br/>
                         Mínimo técnico — não fale taxa a menos que perguntem.<br/>
@@ -1712,7 +1713,7 @@ export default function App() {
                       </div>
                     </div>
 
-                    <button onClick={()=>setCloserStep(4)} style={{ width:"100%", padding:"14px", borderRadius:10, border:"none", background:"linear-gradient(135deg,#D4781E,#A85A15)", color:"#fff", fontSize:14, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+                    <button onClick={()=>setCloserStep(4)} style={{ width:"100%", padding:"14px", borderRadius:10, border:"none", background:"linear-gradient(135deg,#FF6A14,#C2410C)", color:"#fff", fontSize:14, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
                       Gerar Simulação Monte Carlo →
                     </button>
                   </div>
@@ -1723,22 +1724,22 @@ export default function App() {
               {closerStep === 4 && closerEstrategias.length > 0 && (
                 <div>
                   <div style={{ fontSize:14, fontWeight:800, color:"#fff", marginBottom:4 }}>4. Valorização</div>
-                  <div style={{ fontSize:10, color:"#D4781E", marginBottom:14, fontWeight:600 }}>"Se eu conseguir isso pra você, seria um bom negócio?"</div>
+                  <div style={{ fontSize:10, color:"#FF6A14", marginBottom:14, fontWeight:600 }}>"Se eu conseguir isso pra você, seria um bom negócio?"</div>
 
                   <div style={{ background:"rgba(255,255,255,0.02)", borderRadius:8, padding:10, marginBottom:14, border:"1px solid rgba(255,255,255,0.04)", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
                     <div style={{ fontSize:10, color:"#6B7280" }}>{cd.nomeCliente || "Cliente"} quer {f(cd.quantoCusta)} • {PRESETS[cd.tipoAdm]?.label}</div>
-                    <div style={{ fontSize:8, color:"#D4781E", fontWeight:700 }}>Monte Carlo rodado</div>
+                    <div style={{ fontSize:8, color:"#FF6A14", fontWeight:700 }}>Monte Carlo rodado</div>
                   </div>
 
                   {closerEstrategias.map((e,i) => (
                     <details key={i} style={{ marginBottom:10 }} open={i===0}>
                       <summary style={{ ...card(i===0, e.statusCor), cursor:"pointer", listStyle:"none", position:"relative" }}>
-                        {i === 0 && <div style={{ position:"absolute", top:-8, right:100, background:"linear-gradient(135deg,#D4781E,#A85A15)", color:"#fff", fontSize:7, fontWeight:800, padding:"3px 8px", borderRadius:4 }}>RECOMENDADA</div>}
+                        {i === 0 && <div style={{ position:"absolute", top:-8, right:100, background:"linear-gradient(135deg,#FF6A14,#C2410C)", color:"#fff", fontSize:7, fontWeight:800, padding:"3px 8px", borderRadius:4 }}>RECOMENDADA</div>}
                         <div style={{ position:"absolute", top:-8, right:12, background:e.statusCor, color:"#fff", fontSize:7, fontWeight:800, padding:"3px 8px", borderRadius:4 }}>{e.status} {probTexto(e.mc.probabilidade)}</div>
-                        <div style={{ fontSize:14, fontWeight:800, color:"#fff", marginBottom:2 }}>{e.nome}</div>
+                        <div style={{ fontSize:14, fontWeight:800, color:"#fff", marginBottom:2, display:"flex", alignItems:"center", gap:7 }}>{e.Ico && <e.Ico size={16} color={e.tagCor || "#FF6A14"}/>}{e.nome}</div>
                         <div style={{ fontSize:10, color:"#6B7280", marginBottom:8 }}>{e.sub}</div>
                         <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
-                          {[["CARTA",f(e.credito),"#fff"],["DISPONÍVEL",f(e.credLib),"#D4781E"],["PARCELA",f2(e.parcela)+"/mês","#fff"],["TAXA EF.",pc(e.taxaAA)+" a.a.","#D4781E"],["CONTEMP.",`~${e.mc.mesMedio}m`,e.statusCor]].map(([k,v,c],j)=>(
+                          {[["CARTA",f(e.credito),"#fff"],["DISPONÍVEL",f(e.credLib),"#FF6A14"],["PARCELA",f2(e.parcela)+"/mês","#fff"],["TAXA EF.",pc(e.taxaAA)+" a.a.","#FF6A14"],["CONTEMP.",`~${e.mc.mesMedio}m`,e.statusCor]].map(([k,v,c],j)=>(
                             <div key={j}><div style={{ fontSize:7, color:"#4B5563" }}>{k}</div><div style={{ fontSize:13, fontWeight:800, color:c, fontFamily:"'JetBrains Mono',monospace" }}>{v}</div></div>
                           ))}
                         </div>
@@ -1748,11 +1749,11 @@ export default function App() {
                   ))}
 
                   {/* Frases de valorização */}
-                  <div style={{ background:"rgba(139,92,246,0.06)", border:"1px solid rgba(139,92,246,0.12)", borderRadius:8, padding:12, marginBottom:14 }}>
-                    <div style={{ fontSize:9, fontWeight:700, color:"#8B5CF6", marginBottom:6 }}>TERMÔMETRO — FALE AGORA</div>
+                  <div style={{ background:"rgba(250,175,46,0.06)", border:"1px solid rgba(250,175,46,0.12)", borderRadius:8, padding:12, marginBottom:14 }}>
+                    <div style={{ fontSize:9, fontWeight:700, color:"#FAAF2E", marginBottom:6 }}>TERMÔMETRO — FALE AGORA</div>
                     <div style={{ fontSize:11, color:"#C9CDD4", lineHeight:1.8 }}>
-                      "{cd.nomeCliente || "Nome"}, com essa estratégia você consegue {f(closerEstrategias[0]?.credLib || 0)} disponíveis, pagando {f2(closerEstrategias[0]?.parcela || 0)} por mês. <strong style={{ color:"#D4781E" }}>Se eu conseguir isso pra você, seria um bom negócio?</strong>"<br/><br/>
-                      Se SIM → <strong style={{ color:"#D4781E" }}>"Me passa seus dados para verificar a aprovação?"</strong>
+                      "{cd.nomeCliente || "Nome"}, com essa estratégia você consegue {f(closerEstrategias[0]?.credLib || 0)} disponíveis, pagando {f2(closerEstrategias[0]?.parcela || 0)} por mês. <strong style={{ color:"#FF6A14" }}>Se eu conseguir isso pra você, seria um bom negócio?</strong>"<br/><br/>
+                      Se SIM → <strong style={{ color:"#FF6A14" }}>"Me passa seus dados para verificar a aprovação?"</strong>
                     </div>
                   </div>
 
@@ -1760,7 +1761,7 @@ export default function App() {
                     <button onClick={()=>setCloserStep(2)} style={{ flex:1, padding:"12px", borderRadius:10, border:"1px solid rgba(255,255,255,0.06)", background:"transparent", color:"#6B7280", fontSize:12, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>
                       ← Voltar ao Perfil
                     </button>
-                    <button onClick={()=>setCloserStep(5)} style={{ flex:2, padding:"14px", borderRadius:10, border:"none", background:"linear-gradient(135deg,#D4781E,#A85A15)", color:"#fff", fontSize:14, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+                    <button onClick={()=>setCloserStep(5)} style={{ flex:2, padding:"14px", borderRadius:10, border:"none", background:"linear-gradient(135deg,#FF6A14,#C2410C)", color:"#fff", fontSize:14, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
                       Cliente valorizou → Fechar
                     </button>
                   </div>
@@ -1770,12 +1771,12 @@ export default function App() {
               {/* STEP 5 — FECHAMENTO */}
               {closerStep === 5 && (
                 <div>
-                  <div style={{ ...card(false,"#D4781E"), padding:20 }}>
+                  <div style={{ ...card(false,"#FF6A14"), padding:20 }}>
                     <div style={{ fontSize:14, fontWeight:800, color:"#fff", marginBottom:4 }}>5. Fechamento</div>
-                    <div style={{ fontSize:10, color:"#D4781E", marginBottom:14, fontWeight:600 }}>"Técnica de fechamento é um bom levantamento de perfil com uma oferta congruente."</div>
+                    <div style={{ fontSize:10, color:"#FF6A14", marginBottom:14, fontWeight:600 }}>"Técnica de fechamento é um bom levantamento de perfil com uma oferta congruente."</div>
 
-                    <div style={{ background:"rgba(212,120,30,0.06)", borderRadius:8, padding:12, marginBottom:14 }}>
-                      <div style={{ fontSize:9, fontWeight:700, color:"#D4781E", marginBottom:8 }}>CHECKLIST DE FECHAMENTO</div>
+                    <div style={{ background:"rgba(255,106,20,0.06)", borderRadius:8, padding:12, marginBottom:14 }}>
+                      <div style={{ fontSize:9, fontWeight:700, color:"#FF6A14", marginBottom:8 }}>CHECKLIST DE FECHAMENTO</div>
                       {[
                         "Enviar ficha cadastral (dados do cliente)",
                         "Verificar aprovação / crédito",
@@ -1785,7 +1786,7 @@ export default function App() {
                         "Agendar próximo contato com DATA + HORA",
                       ].map((item,i) => (
                         <div key={i} style={{ fontSize:11, color:"#C9CDD4", padding:"5px 0", borderBottom:"1px solid rgba(255,255,255,0.02)", display:"flex", gap:8, alignItems:"center" }}>
-                          <span style={{ color:"#D4781E", fontSize:14, fontWeight:700 }}>□</span> {item}
+                          <span style={{ color:"#FF6A14", fontSize:14, fontWeight:700 }}>□</span> {item}
                         </div>
                       ))}
                     </div>
@@ -1814,7 +1815,7 @@ export default function App() {
 
                     {/* Objeções */}
                     <div style={{ background:"rgba(239,68,68,0.04)", border:"1px solid rgba(239,68,68,0.1)", borderRadius:8, padding:12, marginBottom:14 }}>
-                      <div style={{ fontSize:9, fontWeight:700, color:"#EF4444", marginBottom:8 }}>SE APARECER OBJEÇÃO</div>
+                      <div style={{ fontSize:9, fontWeight:700, color:"#D83C31", marginBottom:8 }}>SE APARECER OBJEÇÃO</div>
                       {[
                         ['"Vou pensar"', '"O que especificamente você precisa pensar?" → Volta pro perfil.'],
                         ['"Preciso falar com esposa/marido"', 'Convida pra nova call. Não apresente sem o decisor.'],
@@ -1822,14 +1823,14 @@ export default function App() {
                         ['"Consórcio é ruim"', 'Não defenda. Volte à DOR. "Você tem medo de morrer sem o primeiro imóvel?"'],
                       ].map(([obj,resp],i) => (
                         <div key={i} style={{ marginBottom:8 }}>
-                          <div style={{ fontSize:10, fontWeight:700, color:"#EF4444" }}>{obj}</div>
+                          <div style={{ fontSize:10, fontWeight:700, color:"#D83C31" }}>{obj}</div>
                           <div style={{ fontSize:10, color:"#C9CDD4", marginTop:2 }}>{resp}</div>
                         </div>
                       ))}
-                      <div style={{ fontSize:9, color:"#F59E0B", fontWeight:600, marginTop:6 }}>Regra: objeção = você errou no levantamento. Volta pra trás, não empurra pra frente.</div>
+                      <div style={{ fontSize:9, color:"#E09112", fontWeight:600, marginTop:6 }}>Regra: objeção = você errou no levantamento. Volta pra trás, não empurra pra frente.</div>
                     </div>
 
-                    <button onClick={()=>window.print()} style={{ width:"100%", padding:"14px", borderRadius:10, border:"none", background:"linear-gradient(135deg,#D4781E,#A85A15)", color:"#fff", fontSize:14, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+                    <button onClick={()=>window.print()} style={{ width:"100%", padding:"14px", borderRadius:10, border:"none", background:"linear-gradient(135deg,#FF6A14,#C2410C)", color:"#fff", fontSize:14, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
                       Imprimir Resumo / PDF
                     </button>
                   </div>

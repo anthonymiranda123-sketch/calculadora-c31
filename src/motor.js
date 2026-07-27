@@ -11,6 +11,7 @@
 // mensal separada (contemplações/mês ÷ cotas ativas).
 // ═══════════════════════════════════════════════════════════
 import DADOS from "./data/grupos.json";
+import { COR } from "./tema";
 
 export const META_DADOS = DADOS.meta;
 export const GRUPOS = DADOS.grupos;
@@ -76,11 +77,11 @@ export function confiavel(grupo) {
 
 export function classificaStatus(prob, temHistorico) {
   if (!temHistorico) return { status: "SEM HISTÓRICO", cor: "#6B7280" };
-  if (prob >= 0.95) return { status: "CÓDIGO 31", cor: "#D4781E" };
-  if (prob >= 0.80) return { status: "ALTA CHANCE", cor: "#E8943A" };
-  if (prob >= 0.50) return { status: "CHANCE MÉDIA", cor: "#D4781E" };
-  if (prob >= 0.25) return { status: "CHANCE BAIXA", cor: "#F59E0B" };
-  return { status: "MUITO BAIXA", cor: "#EF4444" };
+  if (prob >= 0.95) return { status: "CÓDIGO 31", cor: COR.primaria };
+  if (prob >= 0.80) return { status: "ALTA CHANCE", cor: COR.clara };
+  if (prob >= 0.50) return { status: "CHANCE MÉDIA", cor: COR.ambar };
+  if (prob >= 0.25) return { status: "CHANCE BAIXA", cor: COR.ambarEsc };
+  return { status: "MUITO BAIXA", cor: COR.erro };
 }
 
 // Exibição com teto — "≥99%" em vez de "100.0%".
