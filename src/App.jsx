@@ -1420,11 +1420,11 @@ export default function App() {
             </div>
 
             <div className="c31-row" style={{ display:"flex", gap:12 }}>
-              {[["manual",Wrench,"Manual","Preenche tudo: crédito, taxa, prazo, lances","#FF6A14"],["smart",Zap,"Inteligente","Só crédito + tipo. Sistema calcula 3 estratégias.","#FF6A14"]].map(([k,Ico,tit,desc,cor])=>(
-                <div key={k} onClick={()=>setModo(k)} style={{ flex:1, ...card(false,cor), cursor:"pointer", textAlign:"center", padding:24 }}>
-                  <div style={{ display:"flex", justifyContent:"center", marginBottom:10 }}><Ico size={30} color={cor} strokeWidth={1.6}/></div>
-                  <div style={{ fontSize:16, fontWeight:800, color:"#fff", marginBottom:4 }}>{tit}</div>
-                  <div style={{ fontSize:11, color:"#6B7280", lineHeight:1.5 }}>{desc}</div>
+              {[{k:"manual",Ico:Wrench,tit:"Manual",desc:"Preenche tudo: crédito, taxa, prazo, lances",cor:"#FF6A14"},{k:"smart",Ico:Zap,tit:"Inteligente",desc:"Só crédito + tipo. Sistema calcula 3 estratégias.",cor:"#FF6A14"}].map(m=>(
+                <div key={m.k} onClick={()=>setModo(m.k)} style={{ flex:1, ...card(false,m.cor), cursor:"pointer", textAlign:"center", padding:24 }}>
+                  <div style={{ display:"flex", justifyContent:"center", marginBottom:10 }}><m.Ico size={30} color={m.cor} strokeWidth={1.6}/></div>
+                  <div style={{ fontSize:16, fontWeight:800, color:"#fff", marginBottom:4 }}>{m.tit}</div>
+                  <div style={{ fontSize:11, color:"#6B7280", lineHeight:1.5 }}>{m.desc}</div>
                 </div>
               ))}
             </div>
