@@ -1,6 +1,5 @@
 import { useState, useMemo, useCallback, useRef } from "react";
-import * as XLSX from "xlsx";
-import { Target, Wrench, Zap, Hand, Gem, Thermometer, Handshake, ClipboardList, Coins, Hourglass, Upload } from "lucide-react";
+import { Target, Wrench, Zap, Hand, Gem, Thermometer, Handshake, ClipboardList, Coins, Hourglass, Upload, MessageSquareQuote } from "lucide-react";
 import {
   GRUPOS as GRUPOS_DADOS, META_DADOS, monteCarloReal, poolCategoria,
   classificaStatus, probTexto,
@@ -93,310 +92,6 @@ const GRUPOS_REAIS = (() => {
     .map(g => ({ ...g, menores: [], meses: 0, lanceCerto: null }));
   return [...base, ...soCurados];
 })();
-
-// ═══════════════════════════════════════════════════════════
-// PARSERS DE PLANILHAS (CNP, Santander, Lances)
-// ═══════════════════════════════════════════════════════════
-
-function parseCNP(workbook) {
-  const grupos = [];
-  // Sheet "Grupos" = dados completos por grupo
-  const wsGrupos = workbook.Sheets["Grupos"];
-  if (wsGrupos) {
-    const rows = XLSX.utils.sheet_to_json(wsGrupos, { defval: null });
-    // Agrupar por grupo (cada grupo tem múltiplas linhas = múltiplos créditos)
-    const map = {};
-    for (const r of rows) {
-      const id = String(r["Grupo"] || "").trim();
-      if (!id || id === "Total Geral") continue;
-      if (!map[id]) {
-        map[id] = {
-          id, adm: "CNP Caixa", cor: "#005CA9",
-          tipo: "imovel", // default, ajustado abaixo se veículo
-          taxa: Number(r["Taxa"]) || 20,
-          fr: 5,
-          prazo: Number(r["Prazo"]) || 0,
-          venc: r["Vencto da\n Assembleia"] ? "Dia " + new Date(r["Vencto da\n Assembleia"]).getDate() : (r["Vencimento"] || "Dia 10"),
-          vagas: Number(r["Vagas"]) || null,
-          partic: Number(r["Participantes"]) || Number(r["Particp."]) || null,
-          parcela: Number(r["Parcela"]) || null,
-          lanceMedio: Number(r["Lance Médio"]) || null,
-          contemp: Number(r["Média\nContemplados"]) || Number(r["Média Contemplados"]) || null,
-          lancesFixos: Number(r["Média Lances\nFixos Ofertados"]) || Number(r["Média Lances Fixos Ofertados"]) || null,
-          pctFixos: null,
-          creditos: [],
-          embutidoMax: 50,
-        };
-        const pf = Number(r["% Lances\nFixos Ofertados"]) || Number(r["% Lances Fixos Ofertados"]) || null;
-        if (pf) map[id].pctFixos = +(pf * 100).toFixed(2);
-      }
-      const valor = Number(r["Valor"]) || Number(r["Crédito"]) || null;
-      if (valor && !map[id].creditos.includes(Math.round(valor))) {
-        map[id].creditos.push(Math.round(valor));
-      }
-    }
-    for (const g of Object.values(map)) {
-      if (g.creditos.length === 0) continue;
-      g.creditos.sort((a, b) => a - b);
-      // Detectar tipo veículo pelo prazo curto ou ID de grupo de veículo (< 1000 com prazo < 80)
-      if (g.prazo <= 80) g.tipo = "veiculo";
-      if (g.lanceMedio) g.lanceMedio = +g.lanceMedio.toFixed(2);
-      grupos.push(g);
-    }
-  }
-
-  // Sheet "Planilha2" = dados resumidos por grupo (fallback se "Grupos" não existe)
-  if (grupos.length === 0) {
-    const ws2 = workbook.Sheets["Planilha2"];
-    if (ws2) {
-      const rows = XLSX.utils.sheet_to_json(ws2, { defval: null, header: 1 });
-      // Encontrar header row
-      for (let i = 0; i < rows.length; i++) {
-        const row = rows[i];
-        if (row && row.some(c => String(c).includes("Grupo"))) {
-          // Próximas linhas são dados
-          for (let j = i + 1; j < rows.length; j++) {
-            const r = rows[j];
-            if (!r || !r[4]) break; // coluna Grupo vazia = fim
-            const id = String(r[4]).trim();
-            if (!id) continue;
-            grupos.push({
-              id, adm: "CNP Caixa", cor: "#005CA9", tipo: "imovel",
-              taxa: 20, fr: 5,
-              prazo: Number(r[7]) || 0,
-              venc: r[8] || "Dia 10",
-              partic: Number(r[11]) || null,
-              parcela: Number(r[6]) || null,
-              lanceMedio: Number(r[13]) ? +(Number(r[13]) * 100).toFixed(2) : null,
-              contemp: Number(r[9]) || null,
-              lancesFixos: Number(r[10]) || null,
-              pctFixos: r[12] ? +(Number(r[12]) * 100).toFixed(2) : null,
-              creditos: [Math.round(Number(r[5]) || 0)].filter(Boolean),
-              embutidoMax: 50,
-            });
-          }
-          break;
-        }
-      }
-    }
-  }
-  return grupos;
-}
-
-function parseSantander(workbook) {
-  const grupos = [];
-  const wsTabela = workbook.Sheets["Tabela"];
-  if (!wsTabela) return grupos;
-
-  const raw = XLSX.utils.sheet_to_json(wsTabela, { defval: null, header: 1 });
-
-  // Linha 1 tem os prazos: GRUPO | PRAZO_RESTANTE
-  const prazoMap = {};
-  for (let i = 1; i < raw.length; i++) {
-    const r = raw[i];
-    if (r && r[0] && r[1] && !isNaN(Number(r[0])) && !isNaN(Number(r[1]))) {
-      prazoMap[String(r[0])] = Number(r[1]);
-    } else {
-      break;
-    }
-  }
-
-  // Colunas 3+ têm blocos de (GRUPO, INCC, DE, PARA) — créditos por grupo
-  const creditMap = {};
-  for (let i = 1; i < raw.length; i++) {
-    const r = raw[i];
-    if (!r) continue;
-    // Cada bloco de 4 colunas (offset 3, 8, 13...) tem: GRUPO, INCC, DE, PARA
-    for (let col = 3; col < r.length; col += 5) {
-      const grupoId = r[col] != null ? String(r[col]).trim() : null;
-      const de = Number(r[col + 2]);
-      const para = Number(r[col + 3]);
-      if (grupoId && !isNaN(de) && de > 0) {
-        if (!creditMap[grupoId]) creditMap[grupoId] = { creditos: new Set(), incc: Number(r[col + 1]) || 0 };
-        // Usar o valor "PARA" (com INCC) como crédito real
-        creditMap[grupoId].creditos.add(Math.round(para || de));
-      }
-    }
-  }
-
-  // Montar grupos
-  for (const [id, data] of Object.entries(creditMap)) {
-    const prazo = prazoMap[id] || 168;
-    const creditos = [...data.creditos].sort((a, b) => a - b);
-    if (creditos.length === 0) continue;
-    const isVeiculo = prazo <= 80 || id.startsWith("5") || id.startsWith("6");
-    grupos.push({
-      id, adm: "Santander", cor: "#EC0000",
-      tipo: isVeiculo ? "veiculo" : "imovel",
-      taxa: 20, fr: 5,
-      prazo,
-      venc: "Dia 15",
-      partic: null,
-      parcela: null,
-      lanceMedio: null,
-      contemp: null,
-      creditos,
-      embutidoMax: isVeiculo ? 0 : 15,
-    });
-  }
-  return grupos;
-}
-
-function parseLances(workbook, gruposExistentes) {
-  const updates = {};
-  // Sheet LANCES: GRUPO, MAIOR_LANCE, MEDIO_LANCE, MENOR_LANCE, QTDE_CONTMP
-  const wsLances = workbook.Sheets["LANCES"];
-  if (wsLances) {
-    const rows = XLSX.utils.sheet_to_json(wsLances, { defval: null });
-    // Agrupar por grupo — pegar a média dos últimos meses
-    const lancePorGrupo = {};
-    for (const r of rows) {
-      const gid = String(r["GRUPO"] || "").trim();
-      if (!gid) continue;
-      if (!lancePorGrupo[gid]) lancePorGrupo[gid] = { lances: [], contemps: [] };
-      if (r["MEDIO_LANCE"]) lancePorGrupo[gid].lances.push(Number(r["MEDIO_LANCE"]));
-      if (r["QTDE_CONTMP"]) lancePorGrupo[gid].contemps.push(Number(r["QTDE_CONTMP"]));
-    }
-    for (const [gid, data] of Object.entries(lancePorGrupo)) {
-      if (!updates[gid]) updates[gid] = {};
-      if (data.lances.length > 0) {
-        const avg = data.lances.reduce((a, b) => a + b, 0) / data.lances.length;
-        updates[gid].lanceMedio = +(avg * 100).toFixed(2);
-      }
-      if (data.contemps.length > 0) {
-        const avg = data.contemps.reduce((a, b) => a + b, 0) / data.contemps.length;
-        updates[gid].contempLance = Math.round(avg);
-      }
-    }
-  }
-
-  // Sheet SORTEIOS: GRUPO, QTDE_CONTMP
-  const wsSorteios = workbook.Sheets["SORTEIOS"];
-  if (wsSorteios) {
-    const rows = XLSX.utils.sheet_to_json(wsSorteios, { defval: null });
-    const sorteioPorGrupo = {};
-    for (const r of rows) {
-      const gid = String(r["GRUPO"] || "").trim();
-      if (!gid) continue;
-      if (!sorteioPorGrupo[gid]) sorteioPorGrupo[gid] = [];
-      if (r["QTDE_CONTMP"]) sorteioPorGrupo[gid].push(Number(r["QTDE_CONTMP"]));
-    }
-    for (const [gid, arr] of Object.entries(sorteioPorGrupo)) {
-      if (!updates[gid]) updates[gid] = {};
-      const avg = arr.reduce((a, b) => a + b, 0) / arr.length;
-      updates[gid].contempSorteio = Math.round(avg);
-    }
-  }
-
-  // Aplicar updates nos grupos existentes
-  const updated = gruposExistentes.map(g => {
-    const u = updates[g.id];
-    if (!u) return g;
-    const novo = { ...g };
-    if (u.lanceMedio != null) novo.lanceMedio = u.lanceMedio;
-    if (u.contempSorteio != null && u.contempLance != null) {
-      novo.contemp = u.contempSorteio + u.contempLance;
-    } else if (u.contempSorteio != null) {
-      novo.contemp = u.contempSorteio + (u.contempLance || 0);
-    }
-    return novo;
-  });
-
-  return { updated, totalUpdates: Object.keys(updates).length };
-}
-
-// Parser para "LANCES CNP" — formato com sheets CNP-Imóvel, CNP-Automóvel, CNP-Pesados
-function parseLancesCNP(workbook) {
-  const grupos = [];
-  const tipoMap = { "CNP-Imóvel": "imovel", "CNP-Automóvel": "veiculo", "CNP-Pesados": "pesado" };
-
-  for (const [sheetName, tipo] of Object.entries(tipoMap)) {
-    const ws = workbook.Sheets[sheetName];
-    if (!ws) continue;
-    const raw = XLSX.utils.sheet_to_json(ws, { defval: null, header: 1 });
-    if (raw.length < 3) continue;
-
-    // Row 0 = dates, Row 1 = headers, Row 2+ = data
-    const headers = raw[1];
-
-    for (let i = 2; i < raw.length; i++) {
-      const r = raw[i];
-      if (!r || !r[0]) continue;
-      const grupoId = String(r[0]).replace("*", "").trim();
-      if (!grupoId || isNaN(Number(grupoId))) continue;
-
-      const partic = Number(r[1]) || null;
-      const venc = r[2] ? `Dia ${r[2]}` : "Dia 10";
-      const taxaAdm = Number(r[4]) || 0;
-      const fr = Number(r[5]) || 0;
-      const creditoMenor = Number(r[6]) || 0;
-      const creditoMaior = Number(r[7]) || 0;
-      const prazo = Number(r[10]) || 0;
-      const assemRealiz = Number(r[11]) || 0;
-
-      // Build créditos: menor e maior, mais intermediários se houver
-      const creditos = [];
-      if (creditoMenor > 0) creditos.push(Math.round(creditoMenor));
-      if (creditoMaior > 0 && creditoMaior !== creditoMenor) creditos.push(Math.round(creditoMaior));
-      // Check for additional credit columns in the wide area (some sheets have them)
-      // For now, also check if there are multiple credit entries per group in the Crédito column area
-
-      if (creditos.length === 0) continue;
-      creditos.sort((a, b) => a - b);
-
-      // Extract lance data from repeating monthly blocks (col 13+)
-      // Each block: QT Sorteio, QT L. Fixo/Lance, QT L. Livre/Ofertantes, Max, Min
-      const sorteios = [];
-      const lancesMax = [];
-      const lancesMin = [];
-      let col = 13;
-      while (col < r.length - 2) {
-        const qtSort = Number(r[col]);
-        if (!isNaN(qtSort) && qtSort > 0) sorteios.push(qtSort);
-        // Max lance: could be col+4 or col+3 depending on block format
-        // Find "Max" value — it's a percentage
-        for (let offset = 1; offset <= 5 && col + offset < r.length; offset++) {
-          const val = r[col + offset];
-          if (val != null) {
-            const num = typeof val === "string" ? parseFloat(val.replace("%", "")) / 100 : Number(val);
-            if (num > 0 && num < 1) {
-              lancesMax.push(num);
-              break;
-            }
-          }
-        }
-        col += 6; // Skip to next block
-      }
-
-      const contemp = sorteios.length > 0
-        ? Math.round(sorteios.reduce((a, b) => a + b, 0) / sorteios.length)
-        : null;
-      const lanceMedio = lancesMax.length > 0
-        ? +(lancesMax.reduce((a, b) => a + b, 0) / lancesMax.length * 100).toFixed(2)
-        : null;
-
-      const embutidoMax = tipo === "veiculo" ? 30 : tipo === "pesado" ? 30 : 50;
-
-      grupos.push({
-        id: grupoId,
-        adm: "CNP Caixa",
-        cor: "#005CA9",
-        tipo,
-        taxa: +(taxaAdm * 100).toFixed(1),
-        fr: +(fr * 100).toFixed(1),
-        prazo,
-        venc,
-        partic,
-        parcela: null,
-        lanceMedio,
-        contemp,
-        creditos,
-        embutidoMax,
-      });
-    }
-  }
-  return grupos;
-}
 
 function mergeGrupos(base, novos) {
   const map = new Map(base.map(g => [g.id, g]));
@@ -906,6 +601,8 @@ export default function App() {
   const [importLog, setImportLog] = useState([]);
   const [showImport, setShowImport] = useState(false);
   const fileRef = useRef(null);
+  // resultado das hipóteses por grupo (Monte Carlo pesado) reaproveitado entre renders
+  const hipotesesCache = useRef({ chave: null, node: null });
 
   // Grupos ativos = base + importados
   const GRUPOS_ATIVOS = useMemo(() => {
@@ -917,7 +614,9 @@ export default function App() {
   const handleImport = useCallback(async (file) => {
     try {
       const data = await file.arrayBuffer();
-      const wb = XLSX.read(data);
+      // xlsx + parsers só entram na rede quando o closer importa planilha
+      const { lerPlanilha, parseCNP, parseSantander, parseLances, parseLancesCNP } = await import("./planilhas");
+      const wb = lerPlanilha(data);
       const sheets = wb.SheetNames;
       const nome = file.name.toLowerCase();
       let log = [];
@@ -1154,9 +853,30 @@ export default function App() {
         )}
       </div>
 
+      {/* FALE ASSIM — a frase pronta pro closer usar na call, já com os números da tela */}
+      <div style={{ ...card(false), borderLeft:`3px solid ${r.statusCor}` }}>
+        <div style={{ fontSize:10, fontWeight:700, color:"#6B7280", marginBottom:8, letterSpacing:0.5, display:"flex", alignItems:"center", gap:6 }}>
+          <MessageSquareQuote size={12} color={r.statusCor}/> FALE ASSIM
+        </div>
+        <p style={{ fontSize:13, lineHeight:1.75, color:"#E5E7EB", margin:0 }}>
+          "Com {f(r.lanceTotal)} de lance — {r.lanceTotalPct.toFixed(0)}% da carta — você disputa uma carta
+          de {f(r.credito)}, que te libera {f(r.credLib)} na mão. Olhando as assembleias dos últimos 6 meses,
+          metade dos que ofertaram esse lance
+          contemplou até <strong style={{ color:r.statusCor }}>{r.mc.p50 || r.mc.mesMedio} {(r.mc.p50 || r.mc.mesMedio) === 1 ? "mês" : "meses"}</strong>
+          {r.mc.p90 ? <> e a maioria até {r.mc.p90} meses</> : null}. A parcela fica em {f2(r.parcela)} e o custo real
+          disso é <strong style={{ color:r.statusCor }}>{pc(r.taxaAA)} ao ano</strong> — o financiamento cobraria {pc(r.txFinAa)},
+          o que daria {f2(r.parcFin)} de parcela. Contemplação depende de sorteio ou lance, então não é data marcada:
+          o que eu garanto é o lance certo pra você disputar bem."
+        </p>
+      </div>
+
       {/* GRUPOS REAIS — HIPÓTESES COMPLETAS */}
       {(() => {
         const creditoBusca = r.credito;
+        // Monte Carlo por grupo é caro (12 grupos x 500 simulações): memoiza por
+        // crédito + lance + categoria pra não refazer a conta a cada render.
+        const chave = `${creditoBusca}|${r.bolsoPct}|${r.tipoRef}|${GRUPOS_ATIVOS.length}`;
+        if (hipotesesCache.current.chave === chave) return hipotesesCache.current.node;
         const gruposCompativeis = GRUPOS_ATIVOS.filter(g => {
           if (!g.prazo) return false;
           // grupo só entra se tiver histórico de lance — sem histórico não dá pra simular
@@ -1172,7 +892,7 @@ export default function App() {
         })
           .sort((a, b) => (a.lanceCerto ?? 999) - (b.lanceCerto ?? 999)) // lance certo menor = melhor grupo
           .slice(0, 12);
-        if (gruposCompativeis.length === 0) return null;
+        if (gruposCompativeis.length === 0) { hipotesesCache.current = { chave, node: null }; return null; }
         const hipoteses = gruposCompativeis.map(g => {
           const credMaisProx = g.creditos?.length
             ? g.creditos.reduce((prev, curr) => Math.abs(curr - creditoBusca) < Math.abs(prev - creditoBusca) ? curr : prev)
@@ -1198,7 +918,7 @@ export default function App() {
           const { status, cor: statusCor } = classificaStatus(mc.probabilidade, true);
           return { g, credMaisProx, parcelaGrupo, saldoDev, lanceEmb, lanceBolso, novoSaldo, credLib, credEmp, juros, taxaEf, taxaAM, taxaAA, parcela, lanceTotalPct, mc, status, statusCor };
         }).sort((a,b) => b.mc.probabilidade - a.mc.probabilidade || a.taxaAA - b.taxaAA);
-        return (
+        const node = (
           <div style={card(false)}>
             <div style={{ fontSize:10, fontWeight:700, color:"#6B7280", marginBottom:4, letterSpacing:0.5 }}>HIPÓTESES POR GRUPO REAL</div>
             <div style={{ fontSize:9, color:"#4B5563", marginBottom:12 }}>Cada grupo simulado com Monte Carlo • Fórmula de custo efetivo aplicada</div>
@@ -1257,6 +977,8 @@ export default function App() {
             ))}
           </div>
         );
+        hipotesesCache.current = { chave, node };
+        return node;
       })()}
 
       {/* PASSO A PASSO */}
@@ -1403,7 +1125,7 @@ export default function App() {
             <h2 style={{ fontSize:20, fontWeight:800, color:"#fff", marginBottom:4, textAlign:"center" }}>Como quer calcular?</h2>
             <p style={{ fontSize:12, color:"#6B7280", textAlign:"center", marginBottom:20 }}>Simulação Código 31 com Monte Carlo</p>
             {/* MODO CLOSER — destaque */}
-            <div onClick={()=>{setModo("closer");setCloserStep(1);}} style={{ ...card(false,"#FF6A14"), cursor:"pointer", padding:20, marginBottom:16, position:"relative", overflow:"hidden" }}>
+            <div className="c31-card-click" onClick={()=>{setModo("closer");setCloserStep(1);}} style={{ ...card(false,"#FF6A14"), cursor:"pointer", padding:20, marginBottom:16, position:"relative", overflow:"hidden" }}>
               <div style={{ position:"absolute", top:0, right:0, background:"linear-gradient(135deg,#FF6A14,#C2410C)", padding:"4px 14px", borderRadius:"0 0 0 10px", fontSize:8, fontWeight:800, color:"#fff", letterSpacing:1 }}>MÉTODO ANTHONY</div>
               <div className="c31-row" style={{ display:"flex", alignItems:"center", gap:16 }}>
                 <div style={{ flexShrink:0, width:56, height:56, borderRadius:14, background:"rgba(255,106,20,0.1)", border:"1px solid rgba(255,106,20,0.25)", display:"flex", alignItems:"center", justifyContent:"center" }}><Target size={28} color="#FF6A14" strokeWidth={1.8}/></div>
@@ -1421,7 +1143,7 @@ export default function App() {
 
             <div className="c31-row" style={{ display:"flex", gap:12 }}>
               {[{k:"manual",Ico:Wrench,tit:"Manual",desc:"Preenche tudo: crédito, taxa, prazo, lances",cor:"#FF6A14"},{k:"smart",Ico:Zap,tit:"Inteligente",desc:"Só crédito + tipo. Sistema calcula 3 estratégias.",cor:"#FF6A14"}].map(m=>(
-                <div key={m.k} onClick={()=>setModo(m.k)} style={{ flex:1, ...card(false,m.cor), cursor:"pointer", textAlign:"center", padding:24 }}>
+                <div key={m.k} className="c31-card-click" onClick={()=>setModo(m.k)} style={{ flex:1, ...card(false,m.cor), cursor:"pointer", textAlign:"center", padding:24 }}>
                   <div style={{ display:"flex", justifyContent:"center", marginBottom:10 }}><m.Ico size={30} color={m.cor} strokeWidth={1.6}/></div>
                   <div style={{ fontSize:16, fontWeight:800, color:"#fff", marginBottom:4 }}>{m.tit}</div>
                   <div style={{ fontSize:11, color:"#6B7280", lineHeight:1.5 }}>{m.desc}</div>

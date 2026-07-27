@@ -60,6 +60,22 @@ input[type="number"], input[type="text"], textarea, select {
   .c31-chat, .c31-chat-bubble, .c31-import-btn, .c31-header-actions { display: none !important; }
 }
 
+/* Interação — resposta imediata ao toque, sem firula */
+button, [role="button"], summary, .c31-card-click {
+  transition: transform 120ms ease, box-shadow 160ms ease, background-color 160ms ease, border-color 160ms ease;
+}
+button:active, summary:active, .c31-card-click:active { transform: scale(0.985); }
+.c31-card-click:hover { border-color: rgba(255,106,20,0.35); box-shadow: 0 6px 24px rgba(255,106,20,0.08); }
+summary:hover { border-color: rgba(255,106,20,0.3); }
+summary::-webkit-details-marker { display: none; }
+
+/* Foco visível pra quem navega por teclado */
+:focus-visible { outline: 2px solid #FF6A14; outline-offset: 2px; border-radius: 4px; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
+
 /* Scrollbar dark */
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
