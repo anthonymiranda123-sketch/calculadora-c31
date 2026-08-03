@@ -1,4 +1,5 @@
 // Vercel Serverless — Log conversations for analytics
+import { tokenValido } from '../shared/auth-supabase.js';
 // Stores in Vercel KV or returns aggregated insights
 
 // In-memory store (resets on cold start — for MVP)
@@ -8,9 +9,14 @@ let conversationLog = [];
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
   if (req.method === 'OPTIONS') return res.status(200).end();
+
+  // Só o time logado (login do Rep Control)
+  if (!(await tokenValido(req.headers.authorization))) {
+    return res.status(401).json({ error: 'unauthorized' });
+  }
 
   // POST — log a conversation
   if (req.method === 'POST') {

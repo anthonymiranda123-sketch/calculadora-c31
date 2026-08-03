@@ -4,6 +4,7 @@ import {
   GRUPOS as GRUPOS_DADOS, META_DADOS, monteCarloReal, poolCategoria,
   classificaStatus, probTexto,
 } from "./motor";
+import { getToken } from "./auth.jsx";
 
 // ═══════════════════════════════════════════════════════════
 // PRESETS POR CATEGORIA
@@ -402,7 +403,7 @@ function ChatCloser() {
     try {
       const res = await fetch("/api/chat", {
         method:"POST",
-        headers:{"Content-Type":"application/json"},
+        headers:{"Content-Type":"application/json", Authorization:`Bearer ${await getToken()}`},
         body: JSON.stringify({ messages: newMsgs.slice(-10), papel }), // últimas 10 msgs pra contexto
       });
       const data = await res.json();
@@ -513,12 +514,12 @@ function ChatCloser() {
                 <button onClick={()=>{
                   const newMsgs = [...msgs]; newMsgs[i] = {...m, feedback:"worked"};
                   setMsgs(newMsgs);
-                  fetch("/api/log",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({type:"chat",content:m.content,feedback:"worked"})}).catch(()=>{});
+                  getToken().then(t=>fetch("/api/log",{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${t}`},body:JSON.stringify({type:"chat",content:m.content,feedback:"worked"})})).catch(()=>{});
                 }} style={{ fontSize:8, padding:"2px 6px", borderRadius:4, border:"1px solid rgba(255,106,20,0.15)", background:"transparent", color:"#6B7280", cursor:"pointer", fontFamily:"inherit" }}>Funcionou</button>
                 <button onClick={()=>{
                   const newMsgs = [...msgs]; newMsgs[i] = {...m, feedback:"didnt_work"};
                   setMsgs(newMsgs);
-                  fetch("/api/log",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({type:"chat",content:m.content,feedback:"didnt_work"})}).catch(()=>{});
+                  getToken().then(t=>fetch("/api/log",{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${t}`},body:JSON.stringify({type:"chat",content:m.content,feedback:"didnt_work"})})).catch(()=>{});
                 }} style={{ fontSize:8, padding:"2px 6px", borderRadius:4, border:"1px solid rgba(239,68,68,0.15)", background:"transparent", color:"#6B7280", cursor:"pointer", fontFamily:"inherit" }}>Não funcionou</button>
               </div>
             )}
